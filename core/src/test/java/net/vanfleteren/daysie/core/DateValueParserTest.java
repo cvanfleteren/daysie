@@ -47,4 +47,35 @@ class DateValueParserTest {
             assertThat(result.toString()).isEqualTo(expectedToString);
         }
     }
+
+    @Nested
+    class MultiLanguageParserTests {
+        @ParameterizedTest(name = "Dutch parse \"{0}\" returns {1}")
+        @CsvSource({
+                "'na 2026-01-01',       '(2026-01-01T00:00, ∞)'",
+                "'sinds 2026-01-01',    '[2026-01-01T00:00, ∞)'",
+                "'voor 2026-01-01',     '(-∞,2026-01-01T00:00)'",
+                "'tot 2026-01-01',      '(-∞,2026-01-01T00:00)'",
+                "'tot en met 2026-01-01', '(-∞,2026-01-01T00:00]'",
+        })
+        void parse_dutchInput_returnsExpectedToString(String input, String expectedToString) {
+            DateValueParser dutchParser = new DateValueParser(LanguageKeywords.DUTCH);
+            DateValue result = dutchParser.parser().parse(input);
+            assertThat(result.toString()).isEqualTo(expectedToString);
+        }
+
+        @ParameterizedTest(name = "Combined parse \"{0}\" returns {1}")
+        @CsvSource({
+                "'after 2026-01-01',    '(2026-01-01T00:00, ∞)'",
+                "'na 2026-01-01',       '(2026-01-01T00:00, ∞)'",
+                "'since 2026-01-01',    '[2026-01-01T00:00, ∞)'",
+                "'sinds 2026-01-01',    '[2026-01-01T00:00, ∞)'",
+        })
+        void parse_combinedInput_returnsExpectedToString(String input, String expectedToString) {
+            LanguageKeywords combined = LanguageKeywords.combine(java.util.List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));
+            DateValueParser combinedParser = new DateValueParser(combined);
+            DateValue result = combinedParser.parser().parse(input);
+            assertThat(result.toString()).isEqualTo(expectedToString);
+        }
+    }
 }

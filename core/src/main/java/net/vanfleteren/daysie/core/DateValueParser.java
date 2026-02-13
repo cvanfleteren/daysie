@@ -11,6 +11,42 @@ import java.time.LocalTime;
 
 public class DateValueParser {
 
+    private final Parser<DateValue> dateValueParser;
+
+    public DateValueParser() {
+        this(LanguageKeywords.ENGLISH);
+    }
+
+    public DateValueParser(LanguageKeywords keywords) {
+        Parser<String> untilInclusive = Parsers.or(keywords.untilInclusive().stream().map(Scanners::string).toList()).source();
+        Parser<String> untilExclusive = Parsers.or(keywords.untilExclusive().stream().map(Scanners::string).toList()).source();
+        Parser<String> untilOp = Parsers.or(untilInclusive, untilExclusive);
+
+        Parser<DateValue> untilAbsoluteDate = Parsers.sequence(
+                untilOp,
+                Scanners.WHITESPACES.many(),
+                ABSOLUTE_DATE_TIME,
+                (op, spaces, date) -> new DateValue.UntilAbsoluteDate(date, keywords.untilInclusive().contains(op))
+        );
+
+        Parser<String> fromInclusive = Parsers.or(keywords.fromInclusive().stream().map(Scanners::string).toList()).source();
+        Parser<String> fromExclusive = Parsers.or(keywords.fromExclusive().stream().map(Scanners::string).toList()).source();
+        Parser<String> fromOp = Parsers.or(fromInclusive, fromExclusive);
+
+        Parser<DateValue> fromAbsoluteDate = Parsers.sequence(
+                fromOp,
+                Scanners.WHITESPACES.many(),
+                ABSOLUTE_DATE_TIME,
+                (op, spaces, date) -> new DateValue.FromAbsoluteDate(date, keywords.fromInclusive().contains(op))
+        );
+
+        this.dateValueParser = Parsers.or(
+                untilAbsoluteDate,
+                fromAbsoluteDate,
+                ABSOLUTE_DATE_TIME.map(DateValue.AbsoluteDate::new)
+        );
+    }
+
     private static final Parser<LocalDate> DATE = Patterns.regex("\\d{4}-\\d{2}-\\d{2}")
             .toScanner("date")
             .source()
@@ -32,34 +68,10 @@ public class DateValueParser {
 
     static final Parser<LocalDateTime> ABSOLUTE_DATE_TIME = Parsers.or(DATE_TIME, DATE_ONLY);
 
-    private static final Parser<DateValue> UNTIL_ABSOLUTE_DATE = Parsers.sequence(
-            Parsers.or(
-                    Scanners.string("<="),
-                    Scanners.string("<"),
-                    Scanners.string("before"),
-                    Scanners.string("until")
-            ).source(),
-            Scanners.WHITESPACES.many(),
-            ABSOLUTE_DATE_TIME,
-            (op, spaces, date) -> new DateValue.UntilAbsoluteDate(date, op.equals("<=") || op.equals("until"))
-    );
+    public Parser<DateValue> parser() {
+        return dateValueParser;
+    }
 
-    private static final Parser<DateValue> FROM_ABSOLUTE_DATE = Parsers.sequence(
-            Parsers.or(
-                    Scanners.string(">="),
-                    Scanners.string(">"),
-                    Scanners.string("after"),
-                    Scanners.string("since")
-            ).source(),
-            Scanners.WHITESPACES.many(),
-            ABSOLUTE_DATE_TIME,
-            (op, spaces, date) -> new DateValue.FromAbsoluteDate(date, op.equals(">=") || op.equals("since"))
-    );
-
-    public static final Parser<DateValue> DATE_VALUE_PARSER = Parsers.or(
-            UNTIL_ABSOLUTE_DATE,
-            FROM_ABSOLUTE_DATE,
-            ABSOLUTE_DATE_TIME.map(DateValue.AbsoluteDate::new)
-    );
+    public static final Parser<DateValue> DATE_VALUE_PARSER = new DateValueParser().parser();
 
 }
