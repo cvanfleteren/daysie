@@ -183,7 +183,15 @@ class DateValueParserTest {
                 "after friday,           '[2026-02-14T00:00, ∞)'",
                 "since now,              '[2026-02-14T10:00, ∞)'",
                 "gisteren ToT vandaag,   '[2026-02-13T00:00,2026-02-15T00:00)'",
-                "sunday to yesterday,    '[2026-02-08T00:00,2026-02-14T00:00)'"
+                "sunday to yesterday,    '[2026-02-08T00:00,2026-02-14T00:00)'",
+                "2 hours ago,            '[2026-02-14T08:00,2026-02-14T08:00]'",
+                "since 2 hours ago,      '[2026-02-14T08:00, ∞)'",
+                "before 1 day ago,       '(-∞,2026-02-13T10:00)'",
+                "2 uur geleden,          '[2026-02-14T08:00,2026-02-14T08:00]'",
+                "sinds 2 uur geleden,    '[2026-02-14T08:00, ∞)'",
+                "tot 2 uur geleden,      '(-∞,2026-02-14T08:00)'",
+                "2 uur terug,            '[2026-02-14T08:00,2026-02-14T08:00]'",
+                "after 2 hours from now, '(2026-02-14T12:00, ∞)'",
         })
         void parse_relativeInputWithOperator_returnsExpectedToString(String input, String expectedToString) {
             LanguageKeywords combined = LanguageKeywords.combine(List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));

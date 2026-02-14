@@ -83,6 +83,30 @@ public class DateValueParser {
                 }
         );
 
+        Parser<DateValue> agoParser = Parsers.sequence(
+                numberParser.optional(1),
+                Scanners.WHITESPACES.many(),
+                chronoUnitParser,
+                Scanners.WHITESPACES.atLeast(1),
+                toScanner(keywords.ago()),
+                (amount, s1, unitInfo, s2, op) -> {
+                    LocalDateTime now = LocalDateTime.now(clock);
+                    return calculateAgoDate(now, unitInfo.unit(), amount);
+                }
+        );
+
+        Parser<DateValue> fromNowParser = Parsers.sequence(
+                numberParser.optional(1),
+                Scanners.WHITESPACES.many(),
+                chronoUnitParser,
+                Scanners.WHITESPACES.atLeast(1),
+                toScanner(keywords.fromNow()),
+                (amount, s1, unitInfo, s2, op) -> {
+                    LocalDateTime now = LocalDateTime.now(clock);
+                    return calculateFromNowDate(now, unitInfo.unit(), amount);
+                }
+        );
+
         Parser<String> rangeInclusive = toScanner(keywords.rangeConnectorsInclusive());
         Parser<String> rangeExclusive = toScanner(keywords.rangeConnectorsExclusive());
         Parser<String> rangeOp = Parsers.or(rangeInclusive, rangeExclusive);
@@ -202,6 +226,8 @@ public class DateValueParser {
                 startOfParser,
                 endOfParser,
                 betweenParser,
+                agoParser,
+                fromNowParser,
                 modifiedDateValueParser
         );
 
@@ -422,6 +448,14 @@ public class DateValueParser {
         int currentMonth = date.getMonthValue();
         int startMonthOfQuarter = ((currentMonth - 1) / 3) * 3 + 1;
         return date.withMonth(startMonthOfQuarter).withDayOfMonth(1);
+    }
+
+    private DateValue calculateAgoDate(LocalDateTime now, ChronoUnit unit, int amount) {
+        return new DateValue.AbsoluteDate(now.minus(amount, unit), false, true);
+    }
+
+    private DateValue calculateFromNowDate(LocalDateTime now, ChronoUnit unit, int amount) {
+        return new DateValue.AbsoluteDate(now.plus(amount, unit), false, true);
     }
 
     private static boolean containsIgnoreCase(Set<String> set, String value) {

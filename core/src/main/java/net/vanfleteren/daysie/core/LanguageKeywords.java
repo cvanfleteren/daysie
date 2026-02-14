@@ -32,6 +32,8 @@ public record LanguageKeywords(
         Set<String> between,
         Set<String> and,
         Set<String> now,
+        Set<String> ago,
+        Set<String> fromNow,
         Map<String, ChronoUnit> chronoUnits,
         Map<String, DayOfWeek> daysOfWeek
     ) {
@@ -55,6 +57,8 @@ public record LanguageKeywords(
                 .between(Set.of("between"))
                 .and(Set.of("and"))
                 .now(Set.of("now"))
+                .ago(Set.of("ago"))
+                .fromNow(Set.of("from now"))
                 .chronoUnits(Map.ofEntries(
                         Map.entry("hour", ChronoUnit.HOURS),
                         Map.entry("hours", ChronoUnit.HOURS),
@@ -102,6 +106,8 @@ public record LanguageKeywords(
                 .between(Set.of("tussen"))
                 .and(Set.of("en"))
                 .now(Set.of("nu"))
+                .ago(Set.of("geleden", "terug"))
+                .fromNow(Set.of("vanaf nu"))
                 .chronoUnits(Map.ofEntries(
                         Map.entry("uur", ChronoUnit.HOURS),
                         Map.entry("uren", ChronoUnit.HOURS),
@@ -159,6 +165,8 @@ public record LanguageKeywords(
                     .between(combineSets.apply(LanguageKeywords::between))
                     .and(combineSets.apply(LanguageKeywords::and))
                     .now(combineSets.apply(LanguageKeywords::now))
+                    .ago(combineSets.apply(LanguageKeywords::ago))
+                    .fromNow(combineSets.apply(LanguageKeywords::fromNow))
                     .chronoUnits(Map.copyOf(combinedChronoUnits))
                     .daysOfWeek(Map.copyOf(combinedDaysOfWeek))
                     .build();
