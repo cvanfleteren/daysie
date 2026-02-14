@@ -515,6 +515,7 @@ public class DateValueParser {
         return Parsers.or(
                 DATE_ONLY.notFollowedBy(Scanners.WHITESPACES.many().next(Scanners.isChar(Character::isDigit)))
                         .map(date -> new DateValue.AbsoluteRange(date, date.plusDays(1), true, false)),
+                ISO_WEEK,
                 YEAR_MONTH,
                 relativeDate
         );
@@ -560,6 +561,19 @@ public class DateValueParser {
     );
 
     private static final Parser<LocalDateTime> DATE_ONLY = DATE.map(LocalDate::atStartOfDay);
+    
+    private static final Parser<DateValue.AbsoluteRange> ISO_WEEK = Patterns.regex("\\d{4}-W\\d{1,2}")
+            .toScanner("iso-week")
+            .source()
+            .map(s -> {
+                String[] parts = s.split("-W");
+                int year = Integer.parseInt(parts[0]);
+                int week = Integer.parseInt(parts[1]);
+                LocalDate start = LocalDate.of(year, 1, 4) // ISO-8601 week 1 is the week with Jan 4th
+                        .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                        .plusWeeks(week - 1L);
+                return new DateValue.AbsoluteRange(start.atStartOfDay(), start.plusWeeks(1).atStartOfDay(), true, false);
+            });
 
     private static final Parser<DateValue.AbsoluteRange> YEAR_MONTH = Patterns.regex("\\d{4}-\\d{2}(?!-\\d{2})")
             .toScanner("year-month")
