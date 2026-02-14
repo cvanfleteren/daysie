@@ -40,7 +40,21 @@ public class DateValueParser {
                 (op, spaces, date) -> new DateValue.FromAbsoluteDate(date, keywords.fromInclusive().contains(op))
         );
 
+        Parser<String> rangeInclusive = Parsers.or(keywords.rangeConnectorsInclusive().stream().map(Scanners::string).toList()).source();
+        Parser<String> rangeExclusive = Parsers.or(keywords.rangeConnectorsExclusive().stream().map(Scanners::string).toList()).source();
+        Parser<String> rangeOp = Parsers.or(rangeInclusive, rangeExclusive);
+
+        Parser<DateValue> absoluteRange = Parsers.sequence(
+                ABSOLUTE_DATE_TIME,
+                Scanners.WHITESPACES.many(),
+                rangeOp,
+                Scanners.WHITESPACES.many(),
+                ABSOLUTE_DATE_TIME,
+                (from, s1, op, s2, until) -> new DateValue.AbsoluteRange(from, until, true, keywords.rangeConnectorsInclusive().contains(op))
+        );
+
         this.dateValueParser = Parsers.or(
+                absoluteRange,
                 untilAbsoluteDate,
                 fromAbsoluteDate,
                 ABSOLUTE_DATE_TIME.map(DateValue.AbsoluteDate::new)

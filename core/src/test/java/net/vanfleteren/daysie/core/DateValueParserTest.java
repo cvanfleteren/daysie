@@ -41,6 +41,9 @@ class DateValueParserTest {
                 "'since 2026-01-01',       '[2026-01-01T00:00, ∞)'",
                 "'>= 2026-02-01',          '[2026-02-01T00:00, ∞)'",
                 "'>= 2026-02-03 12:34:56', '[2026-02-03T12:34:56, ∞)'",
+
+                "'2026-01-01 to 2026-02-01', '[2026-01-01T00:00, 2026-02-01T00:00]'",
+                "'2026-01-01 - 2026-02-01', '[2026-01-01T00:00, 2026-02-01T00:00]'",
         })
         void parse_input_returnsExpectedToString(String input, String expectedToString) {
             DateValue result = DateValueParser.DATE_VALUE_PARSER.parse(input);
@@ -57,6 +60,8 @@ class DateValueParserTest {
                 "'voor 2026-01-01',     '(-∞,2026-01-01T00:00)'",
                 "'tot 2026-01-01',      '(-∞,2026-01-01T00:00)'",
                 "'tot en met 2026-01-01', '(-∞,2026-01-01T00:00]'",
+                "'2026-01-01 tot 2026-02-01', '[2026-01-01T00:00, 2026-02-01T00:00]'",
+                "'2026-01-01 t/m 2026-02-01', '[2026-01-01T00:00, 2026-02-01T00:00]'",
         })
         void parse_dutchInput_returnsExpectedToString(String input, String expectedToString) {
             DateValueParser dutchParser = new DateValueParser(LanguageKeywords.DUTCH);
