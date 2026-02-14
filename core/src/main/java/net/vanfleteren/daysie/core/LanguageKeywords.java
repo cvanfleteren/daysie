@@ -31,6 +31,7 @@ public record LanguageKeywords(
         Set<String> endOf,
         Set<String> between,
         Set<String> and,
+        Set<String> at,
         Set<String> now,
         Set<String> ago,
         Set<String> fromNow,
@@ -56,6 +57,7 @@ public record LanguageKeywords(
                 .endOf(Set.of("end of"))
                 .between(Set.of("between"))
                 .and(Set.of("and"))
+                .at(Set.of("at"))
                 .now(Set.of("now"))
                 .ago(Set.of("ago"))
                 .fromNow(Set.of("from now"))
@@ -113,6 +115,7 @@ public record LanguageKeywords(
                 .endOf(Set.of("einde van"))
                 .between(Set.of("tussen"))
                 .and(Set.of("en"))
+                .at(Set.of("om"))
                 .now(Set.of("nu"))
                 .ago(Set.of("geleden", "terug"))
                 .fromNow(Set.of("vanaf nu"))
@@ -180,6 +183,7 @@ public record LanguageKeywords(
                     .endOf(combineSets.apply(LanguageKeywords::endOf))
                     .between(combineSets.apply(LanguageKeywords::between))
                     .and(combineSets.apply(LanguageKeywords::and))
+                    .at(combineSets.apply(LanguageKeywords::at))
                     .now(combineSets.apply(LanguageKeywords::now))
                     .ago(combineSets.apply(LanguageKeywords::ago))
                     .fromNow(combineSets.apply(LanguageKeywords::fromNow))

@@ -107,6 +107,23 @@ public class DateValueParser {
                 }
         );
 
+        Parser<DateValue> relativePoint = Parsers.or(agoParser, fromNowParser);
+
+        Parser<DateValue> relativePointWithTime = Parsers.sequence(
+                relativePoint,
+                Scanners.WHITESPACES.atLeast(1),
+                toScanner(keywords.at()).optional(),
+                Scanners.WHITESPACES.many(),
+                TIME,
+                (pointVal, s1, at, s2, time) -> {
+                    if (pointVal instanceof DateValue.AbsoluteDate ad) {
+                        LocalDateTime dt = LocalDateTime.of(ad.date().toLocalDate(), time);
+                        return new DateValue.AbsoluteDate(dt, false, true);
+                    }
+                    throw new IllegalStateException("Unexpected DateValue type: " + pointVal.getClass());
+                }
+        );
+
         Parser<String> rangeInclusive = toScanner(keywords.rangeConnectorsInclusive());
         Parser<String> rangeExclusive = toScanner(keywords.rangeConnectorsExclusive());
         Parser<String> rangeOp = Parsers.or(rangeInclusive, rangeExclusive);
@@ -230,8 +247,8 @@ public class DateValueParser {
                 startOfParser,
                 endOfParser,
                 betweenParser,
-                agoParser,
-                fromNowParser,
+                relativePointWithTime,
+                relativePoint,
                 modifiedDateValueParser
         ));
 
@@ -482,8 +499,46 @@ public class DateValueParser {
         return Parsers.or(keywords.stream().sorted(BY_LENGTH_DESC).map(Scanners::stringCaseInsensitive).toList()).source();
     }
 
-    private static Parser<DateValue> createDateOnlyParser(LanguageKeywords keywords, Clock clock) {
-        Parser<DateValue> relativeDate = Parsers.or(
+    private static Parser<DateValue> createAbsoluteDateTimeParser(LanguageKeywords keywords, Clock clock) {
+        Parser<DateValue> nowParser = toScanner(keywords.now()).map(ignored -> new DateValue.AbsoluteDate(LocalDateTime.now(clock), false, true));
+
+        Parser<DateValue> relativeDate = createRelativeDateParser(keywords, clock);
+
+        Parser<DateValue> relativeDateWithTime = Parsers.sequence(
+                relativeDate,
+                Scanners.WHITESPACES.atLeast(1),
+                toScanner(keywords.at()).optional(),
+                Scanners.WHITESPACES.many(),
+                TIME,
+                (dateVal, s1, at, s2, time) -> {
+                    LocalDateTime dt;
+                    if (dateVal instanceof DateValue.AbsoluteRange ar) {
+                        dt = LocalDateTime.of(ar.from().toLocalDate(), time);
+                    } else if (dateVal instanceof DateValue.AbsoluteDate ad) {
+                        dt = LocalDateTime.of(ad.date().toLocalDate(), time);
+                    } else {
+                        throw new IllegalStateException("Unexpected DateValue type: " + dateVal.getClass());
+                    }
+                    return new DateValue.AbsoluteDate(dt, false, true);
+                }
+        );
+
+        Parser<DateValue> timeOnly = TIME.map(time -> {
+            LocalDate today = LocalDate.now(clock);
+            return new DateValue.AbsoluteDate(LocalDateTime.of(today, time), false, true);
+        });
+
+        return Parsers.or(
+                nowParser,
+                DATE_TIME.map(dt -> new DateValue.AbsoluteDate(dt, false, true)),
+                relativeDateWithTime,
+                createDateOnlyParser(keywords, clock),
+                timeOnly
+        );
+    }
+
+    private static Parser<DateValue> createRelativeDateParser(LanguageKeywords keywords, Clock clock) {
+        return Parsers.or(
                 Stream.of(
                         keywords.today().stream().map(s -> Scanners.stringCaseInsensitive(s).map(ignored -> {
                             LocalDate today = LocalDate.now(clock);
@@ -511,29 +566,15 @@ public class DateValueParser {
                         }))
                 ).flatMap(s -> s).toList()
         );
+    }
 
+    private static Parser<DateValue> createDateOnlyParser(LanguageKeywords keywords, Clock clock) {
         return Parsers.or(
                 DATE_ONLY.notFollowedBy(Scanners.WHITESPACES.many().next(Scanners.isChar(Character::isDigit)))
                         .map(date -> new DateValue.AbsoluteRange(date, date.plusDays(1), true, false)),
                 ISO_WEEK,
                 YEAR_MONTH,
-                relativeDate
-        );
-    }
-
-    private static Parser<DateValue> createAbsoluteDateTimeParser(LanguageKeywords keywords, Clock clock) {
-        Parser<DateValue> nowParser = toScanner(keywords.now()).map(ignored -> new DateValue.AbsoluteDate(LocalDateTime.now(clock), false, true));
-
-        Parser<DateValue> timeOnly = TIME.map(time -> {
-            LocalDate today = LocalDate.now(clock);
-            return new DateValue.AbsoluteDate(LocalDateTime.of(today, time), false, true);
-        });
-
-        return Parsers.longest(
-                nowParser,
-                DATE_TIME.map(dt -> new DateValue.AbsoluteDate(dt, false, true)),
-                createDateOnlyParser(keywords, clock),
-                timeOnly
+                createRelativeDateParser(keywords, clock)
         );
     }
 
