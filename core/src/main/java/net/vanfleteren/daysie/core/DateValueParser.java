@@ -22,6 +22,7 @@ public class DateValueParser {
 
     private final Parser<DateValue> dateValueParser;
     private final Parser<LocalDateTime> absoluteDateTimeParser;
+    private final Parser<LocalDateTime> dateOnlyParser;
 
     public DateValueParser() {
         this(LanguageKeywords.ENGLISH, Clock.systemDefaultZone());
@@ -32,6 +33,7 @@ public class DateValueParser {
     }
 
     public DateValueParser(LanguageKeywords keywords, Clock clock) {
+        this.dateOnlyParser = createDateOnlyParser(keywords, clock);
         this.absoluteDateTimeParser = createAbsoluteDateTimeParser(keywords, clock);
         Parser<String> untilInclusive = toScanner(keywords.untilInclusive());
         Parser<String> untilExclusive = toScanner(keywords.untilExclusive());
@@ -48,11 +50,19 @@ public class DateValueParser {
         Parser<String> fromExclusive = toScanner(keywords.fromExclusive());
         Parser<String> fromOp = Parsers.or(fromInclusive, fromExclusive);
 
-        Parser<DateValue> fromAbsoluteDate = Parsers.sequence(
-                fromOp,
-                Scanners.WHITESPACES.many(),
-                absoluteDateTimeParser,
-                (op, spaces, date) -> new DateValue.FromAbsoluteDate(date, containsIgnoreCase(keywords.fromInclusive(), op))
+        Parser<DateValue> fromAbsoluteDate = Parsers.or(
+                Parsers.sequence(
+                        fromExclusive,
+                        Scanners.WHITESPACES.many(),
+                        dateOnlyParser,
+                        (op, spaces, date) -> new DateValue.FromAbsoluteDate(date.plusDays(1), true)
+                ),
+                Parsers.sequence(
+                        fromOp,
+                        Scanners.WHITESPACES.many(),
+                        absoluteDateTimeParser,
+                        (op, spaces, date) -> new DateValue.FromAbsoluteDate(date, containsIgnoreCase(keywords.fromInclusive(), op))
+                )
         );
 
         Parser<String> rangeInclusive = toScanner(keywords.rangeConnectorsInclusive());
@@ -222,7 +232,7 @@ public class DateValueParser {
         return Parsers.or(keywords.stream().sorted(BY_LENGTH_DESC).map(Scanners::stringCaseInsensitive).toList()).source();
     }
 
-    private static Parser<LocalDateTime> createAbsoluteDateTimeParser(LanguageKeywords keywords, Clock clock) {
+    private static Parser<LocalDateTime> createDateOnlyParser(LanguageKeywords keywords, Clock clock) {
         Parser<LocalDateTime> relativeDate = Parsers.or(
                 Stream.of(
                         keywords.today().stream().map(s -> Scanners.stringCaseInsensitive(s).map(ignored -> LocalDate.now(clock).atStartOfDay())),
@@ -232,7 +242,11 @@ public class DateValueParser {
                 ).flatMap(s -> s).toList()
         );
 
-        return Parsers.longest(DATE_TIME, DATE_ONLY, relativeDate);
+        return Parsers.or(DATE_ONLY.notFollowedBy(Scanners.WHITESPACES.many().next(Scanners.isChar(Character::isDigit))), relativeDate);
+    }
+
+    private static Parser<LocalDateTime> createAbsoluteDateTimeParser(LanguageKeywords keywords, Clock clock) {
+        return Parsers.longest(DATE_TIME, createDateOnlyParser(keywords, clock));
     }
 
     private static final Parser<LocalDate> DATE = Patterns.regex("\\d{4}-\\d{2}-\\d{2}")

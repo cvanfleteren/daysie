@@ -45,11 +45,12 @@ class DateValueParserTest {
                 "'<= 2026-02-01',          '(-∞,2026-02-01T00:00]'",
                 "'<= 2026-02-03 12:34:56', '(-∞,2026-02-03T12:34:56]'",
 
-                "'> 2026-02-01',           '(2026-02-01T00:00, ∞)'",
-                "'after 2026-01-01',       '(2026-01-01T00:00, ∞)'",
+                "'> 2026-02-01',           '[2026-02-02T00:00, ∞)'",
+                "'after 2026-01-01',       '[2026-01-02T00:00, ∞)'",
                 "'since 2026-01-01',       '[2026-01-01T00:00, ∞)'",
                 "'>= 2026-02-01',          '[2026-02-01T00:00, ∞)'",
                 "'>= 2026-02-03 12:34:56', '[2026-02-03T12:34:56, ∞)'",
+                "'after 2026-01-01 12:00:00', '(2026-01-01T12:00, ∞)'",
 
                 "'BEFORE 2026-01-01',      '(-∞,2026-01-01T00:00)'",
                 "'SiNcE 2026-01-01',       '[2026-01-01T00:00, ∞)'",
@@ -138,11 +139,11 @@ class DateValueParserTest {
         @ParameterizedTest(name = "parse \"{0}\" with operator returns {1}")
         @CsvSource({
                 "before yesterday,       '(-∞,2026-02-13T00:00)'",
-                "after today,            '(2026-02-14T00:00, ∞)'",
+                "after today,            '[2026-02-15T00:00, ∞)'",
                 "since yesterday,        '[2026-02-13T00:00, ∞)'",
                 "until tomorrow,         '(-∞,2026-02-15T00:00]'",
                 "since saturday,         '[2026-02-14T00:00, ∞)'",
-                "after friday,           '(2026-02-13T00:00, ∞)'",
+                "after friday,           '[2026-02-14T00:00, ∞)'",
                 "gisteren ToT vandaag,   '[2026-02-13T00:00,2026-02-14T00:00]'",
                 "sunday to yesterday,    '[2026-02-08T00:00,2026-02-13T00:00]'"
         })
@@ -158,7 +159,7 @@ class DateValueParserTest {
     class MultiLanguageParserTests {
         @ParameterizedTest(name = "Dutch parse \"{0}\" returns {1}")
         @CsvSource({
-                "'na 2026-01-01',               '(2026-01-01T00:00, ∞)'",
+                "'na 2026-01-01',               '[2026-01-02T00:00, ∞)'",
                 "'sinds 2026-01-01',            '[2026-01-01T00:00, ∞)'",
                 "'voor 2026-01-01',             '(-∞,2026-01-01T00:00)'",
                 "'tot 2026-01-01',              '(-∞,2026-01-01T00:00)'",
@@ -174,10 +175,11 @@ class DateValueParserTest {
 
         @ParameterizedTest(name = "Combined parse \"{0}\" returns {1}")
         @CsvSource({
-                "'after 2026-01-01',    '(2026-01-01T00:00, ∞)'",
-                "'na 2026-01-01',       '(2026-01-01T00:00, ∞)'",
-                "'since 2026-01-01',    '[2026-01-01T00:00, ∞)'",
-                "'sinds 2026-01-01',    '[2026-01-01T00:00, ∞)'",
+                "'after 2026-01-01',       '[2026-01-02T00:00, ∞)'",
+                "'na 2026-01-01',          '[2026-01-02T00:00, ∞)'",
+                "'na 2026-01-01 10:00:00', '(2026-01-01T10:00, ∞)'",
+                "'since 2026-01-01',       '[2026-01-01T00:00, ∞)'",
+                "'sinds 2026-01-01',       '[2026-01-01T00:00, ∞)'",
         })
         void parse_combinedInput_returnsExpectedToString(String input, String expectedToString) {
             LanguageKeywords combined = LanguageKeywords.combine(List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));
