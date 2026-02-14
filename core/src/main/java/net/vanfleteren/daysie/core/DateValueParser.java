@@ -133,6 +133,41 @@ public class DateValueParser {
                 absoluteDateTimeParser
         );
 
+        Parser<DateValue> betweenParser = Parsers.sequence(
+                toScanner(keywords.between()),
+                Scanners.WHITESPACES.atLeast(1),
+                absoluteDateTimeParser,
+                Scanners.WHITESPACES.atLeast(1),
+                toScanner(keywords.and()),
+                Scanners.WHITESPACES.atLeast(1),
+                absoluteDateTimeParser,
+                (op1, s1, fromValue, s2, op2, s3, untilValue) -> {
+                    LocalDateTime from;
+                    LocalDateTime until;
+                    boolean isUntilInclusive;
+
+                    if (fromValue instanceof DateValue.AbsoluteDate ad) {
+                        from = ad.date();
+                    } else if (fromValue instanceof DateValue.AbsoluteRange ar) {
+                        from = ar.from();
+                    } else {
+                        throw new IllegalStateException("Unexpected DateValue type: " + fromValue.getClass());
+                    }
+
+                    if (untilValue instanceof DateValue.AbsoluteDate ad) {
+                        until = ad.date();
+                        isUntilInclusive = true; // "between A and B" is usually inclusive of the day B
+                    } else if (untilValue instanceof DateValue.AbsoluteRange ar) {
+                        until = ar.until();
+                        isUntilInclusive = ar.untilInclusive();
+                    } else {
+                        throw new IllegalStateException("Unexpected DateValue type: " + untilValue.getClass());
+                    }
+
+                    return new DateValue.AbsoluteRange(from, until, true, isUntilInclusive);
+                }
+        );
+
         Parser<DateValue> startOfParser = Parsers.sequence(
                 toScanner(keywords.startOf()),
                 Scanners.WHITESPACES.atLeast(1),
@@ -166,6 +201,7 @@ public class DateValueParser {
         Parser<DateValue> finalAbsoluteDateTimeParser = Parsers.or(
                 startOfParser,
                 endOfParser,
+                betweenParser,
                 modifiedDateValueParser
         );
 
