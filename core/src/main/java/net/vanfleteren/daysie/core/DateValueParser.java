@@ -6,6 +6,7 @@ import org.jparsec.Scanners;
 import org.jparsec.pattern.Patterns;
 
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -38,7 +39,7 @@ public class DateValueParser {
                 untilOp,
                 Scanners.WHITESPACES.many(),
                 absoluteDateTimeParser,
-                (op, spaces, date) -> new DateValue.UntilAbsoluteDate(date, keywords.untilInclusive().contains(op))
+                (op, spaces, date) -> new DateValue.UntilAbsoluteDate(date, containsIgnoreCase(keywords.untilInclusive(), op))
         );
 
         Parser<String> fromInclusive = toScanner(keywords.fromInclusive());
@@ -49,7 +50,7 @@ public class DateValueParser {
                 fromOp,
                 Scanners.WHITESPACES.many(),
                 absoluteDateTimeParser,
-                (op, spaces, date) -> new DateValue.FromAbsoluteDate(date, keywords.fromInclusive().contains(op))
+                (op, spaces, date) -> new DateValue.FromAbsoluteDate(date, containsIgnoreCase(keywords.fromInclusive(), op))
         );
 
         Parser<String> rangeInclusive = toScanner(keywords.rangeConnectorsInclusive());
@@ -62,28 +63,48 @@ public class DateValueParser {
                 rangeOp,
                 Scanners.WHITESPACES.many(),
                 absoluteDateTimeParser,
-                (from, s1, op, s2, until) -> new DateValue.AbsoluteRange(from, until, true, keywords.rangeConnectorsInclusive().contains(op))
+                (from, s1, op, s2, until) -> new DateValue.AbsoluteRange(from, until, true, containsIgnoreCase(keywords.rangeConnectorsInclusive(), op))
         );
+
+        Parser<DateValue> lastWeekParser = toScanner(keywords.lastWeek()).map(ignored -> {
+            LocalDate today = LocalDate.now(clock);
+            LocalDate startOfLastWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(1);
+            LocalDate endOfLastWeek = startOfLastWeek.plusDays(6);
+            return new DateValue.AbsoluteRange(startOfLastWeek.atStartOfDay(), endOfLastWeek.atStartOfDay(), true, true);
+        });
+
+        Parser<DateValue> lastMonthParser = toScanner(keywords.lastMonth()).map(ignored -> {
+            LocalDate today = LocalDate.now(clock);
+            LocalDate firstDayOfLastMonth = today.minusMonths(1).with(TemporalAdjusters.firstDayOfMonth());
+            LocalDate lastDayOfLastMonth = firstDayOfLastMonth.with(TemporalAdjusters.lastDayOfMonth());
+            return new DateValue.AbsoluteRange(firstDayOfLastMonth.atStartOfDay(), lastDayOfLastMonth.atStartOfDay(), true, true);
+        });
 
         this.dateValueParser = Parsers.or(
                 absoluteRange,
+                lastWeekParser,
+                lastMonthParser,
                 untilAbsoluteDate,
                 fromAbsoluteDate,
                 absoluteDateTimeParser.map(DateValue.AbsoluteDate::new)
         );
     }
 
+    private static boolean containsIgnoreCase(Set<String> set, String value) {
+        return set.stream().anyMatch(s -> s.equalsIgnoreCase(value));
+    }
+
     private static Parser<String> toScanner(Set<String> keywords) {
-        return Parsers.or(keywords.stream().sorted(BY_LENGTH_DESC).map(Scanners::string).toList()).source();
+        return Parsers.or(keywords.stream().sorted(BY_LENGTH_DESC).map(Scanners::stringCaseInsensitive).toList()).source();
     }
 
     private static Parser<LocalDateTime> createAbsoluteDateTimeParser(LanguageKeywords keywords, Clock clock) {
         Parser<LocalDateTime> relativeDate = Parsers.or(
                 Stream.of(
-                        keywords.today().stream().map(s -> Scanners.string(s).map(ignored -> LocalDate.now(clock).atStartOfDay())),
-                        keywords.yesterday().stream().map(s -> Scanners.string(s).map(ignored -> LocalDate.now(clock).minusDays(1).atStartOfDay())),
-                        keywords.tomorrow().stream().map(s -> Scanners.string(s).map(ignored -> LocalDate.now(clock).plusDays(1).atStartOfDay())),
-                        keywords.daysOfWeek().entrySet().stream().map(entry -> Scanners.string(entry.getKey()).map(ignored -> LocalDate.now(clock).with(TemporalAdjusters.previousOrSame(entry.getValue())).atStartOfDay()))
+                        keywords.today().stream().map(s -> Scanners.stringCaseInsensitive(s).map(ignored -> LocalDate.now(clock).atStartOfDay())),
+                        keywords.yesterday().stream().map(s -> Scanners.stringCaseInsensitive(s).map(ignored -> LocalDate.now(clock).minusDays(1).atStartOfDay())),
+                        keywords.tomorrow().stream().map(s -> Scanners.stringCaseInsensitive(s).map(ignored -> LocalDate.now(clock).plusDays(1).atStartOfDay())),
+                        keywords.daysOfWeek().entrySet().stream().map(entry -> Scanners.stringCaseInsensitive(entry.getKey()).map(ignored -> LocalDate.now(clock).with(TemporalAdjusters.previousOrSame(entry.getValue())).atStartOfDay()))
                 ).flatMap(s -> s).toList()
         );
 
@@ -102,9 +123,9 @@ public class DateValueParser {
 
     private static final Parser<LocalDateTime> DATE_TIME = Parsers.sequence(
             DATE,
-            Scanners.WHITESPACES.atLeast(1),
+            Parsers.or(Scanners.WHITESPACES.atLeast(1), Scanners.stringCaseInsensitive("T")),
             TIME,
-            (date, space, time) -> LocalDateTime.of(date, time)
+            (date, separator, time) -> LocalDateTime.of(date, time)
     );
 
     private static final Parser<LocalDateTime> DATE_ONLY = DATE.map(LocalDate::atStartOfDay);

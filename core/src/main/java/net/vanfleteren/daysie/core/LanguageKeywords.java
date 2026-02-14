@@ -17,6 +17,8 @@ public record LanguageKeywords(
         Set<String> today,
         Set<String> yesterday,
         Set<String> tomorrow,
+        Set<String> lastWeek,
+        Set<String> lastMonth,
         Map<String, DayOfWeek> daysOfWeek
 ) {
     public static final LanguageKeywords ENGLISH = new LanguageKeywords(
@@ -29,6 +31,8 @@ public record LanguageKeywords(
             Set.of("today"),
             Set.of("yesterday"),
             Set.of("tomorrow"),
+            Set.of("last week"),
+            Set.of("last month"),
             Map.of(
                     "monday", DayOfWeek.MONDAY,
                     "tuesday", DayOfWeek.TUESDAY,
@@ -50,6 +54,8 @@ public record LanguageKeywords(
             Set.of("vandaag"),
             Set.of("gisteren"),
             Set.of("morgen"),
+            Set.of("vorige week"),
+            Set.of("vorige maand"),
             Map.of(
                     "maandag", DayOfWeek.MONDAY,
                     "dinsdag", DayOfWeek.TUESDAY,
@@ -75,6 +81,8 @@ public record LanguageKeywords(
                 keywordsList.stream().flatMap(k -> k.today().stream()).collect(Collectors.toUnmodifiableSet()),
                 keywordsList.stream().flatMap(k -> k.yesterday().stream()).collect(Collectors.toUnmodifiableSet()),
                 keywordsList.stream().flatMap(k -> k.tomorrow().stream()).collect(Collectors.toUnmodifiableSet()),
+                keywordsList.stream().flatMap(k -> k.lastWeek().stream()).collect(Collectors.toUnmodifiableSet()),
+                keywordsList.stream().flatMap(k -> k.lastMonth().stream()).collect(Collectors.toUnmodifiableSet()),
                 Map.copyOf(combinedDaysOfWeek)
         );
     }

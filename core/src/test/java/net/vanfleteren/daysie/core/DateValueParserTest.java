@@ -22,6 +22,8 @@ class DateValueParserTest {
         @CsvSource({
                 "2026-02-03, 2026-02-03T00:00:00",
                 "2026-02-03 12:34:56, 2026-02-03T12:34:56",
+                "2026-02-03T12:34:56, 2026-02-03T12:34:56",
+                "2026-02-03t12:34:56, 2026-02-03T12:34:56",
                 "2026-02-03   12:34:56, 2026-02-03T12:34:56"
         })
         void parse_input_returnsDateTime(String input, String expected) {
@@ -49,6 +51,9 @@ class DateValueParserTest {
                 "'>= 2026-02-01',          '[2026-02-01T00:00, ∞)'",
                 "'>= 2026-02-03 12:34:56', '[2026-02-03T12:34:56, ∞)'",
 
+                "'BEFORE 2026-01-01',      '(-∞,2026-01-01T00:00)'",
+                "'SiNcE 2026-01-01',       '[2026-01-01T00:00, ∞)'",
+
                 "'2026-01-01 to 2026-02-01', '[2026-01-01T00:00,2026-02-01T00:00]'",
                 "'2026-01-01 - 2026-02-01',  '[2026-01-01T00:00,2026-02-01T00:00]'",
         })
@@ -72,6 +77,15 @@ class DateValueParserTest {
                 "saturday,               '[2026-02-14T00:00,2026-02-14T00:00]'",
                 "zaterdag,               '[2026-02-14T00:00,2026-02-14T00:00]'",
                 "sunday,                 '[2026-02-08T00:00,2026-02-08T00:00]'",
+
+                "last week,              '[2026-02-02T00:00,2026-02-08T00:00]'",
+                "vorige week,            '[2026-02-02T00:00,2026-02-08T00:00]'",
+                "last month,             '[2026-01-01T00:00,2026-01-31T00:00]'",
+                "vorige maand,           '[2026-01-01T00:00,2026-01-31T00:00]'",
+                "TODAY,                  '[2026-02-14T00:00,2026-02-14T00:00]'",
+                "Yesterday,              '[2026-02-13T00:00,2026-02-13T00:00]'",
+                "MONDAY,                 '[2026-02-09T00:00,2026-02-09T00:00]'",
+                "Vorige Week,            '[2026-02-02T00:00,2026-02-08T00:00]'",
         })
         void parse_relativeInput_returnsExpectedToString(String input, String expectedToString) {
             LanguageKeywords combined = LanguageKeywords.combine(List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));
