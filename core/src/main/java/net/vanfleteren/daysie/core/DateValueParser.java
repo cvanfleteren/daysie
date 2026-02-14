@@ -38,10 +38,12 @@ public class DateValueParser {
 
         Parser<Integer> numberParser = Scanners.INTEGER.map(Integer::parseInt);
 
-        Parser<ChronoUnit> chronoUnitParser = Parsers.or(
+        record ChronoUnitInfo(ChronoUnit unit, boolean isQuarter) {}
+
+        Parser<ChronoUnitInfo> chronoUnitParser = Parsers.or(
                 keywords.chronoUnits().entrySet().stream()
                         .sorted((e1, e2) -> e2.getKey().length() - e1.getKey().length())
-                        .map(entry -> Scanners.stringCaseInsensitive(entry.getKey()).map(ignored -> entry.getValue()))
+                        .map(entry -> Scanners.stringCaseInsensitive(entry.getKey()).map(ignored -> new ChronoUnitInfo(entry.getValue(), isQuarter(entry.getKey()))))
                         .toList()
         );
 
@@ -50,24 +52,36 @@ public class DateValueParser {
                 Scanners.WHITESPACES.atLeast(1),
                 numberParser.optional(1),
                 Scanners.WHITESPACES.many(),
-                chronoUnitParser
-        ).source().map(input -> calculateRelativeRangeFromInput(input, clock, keywords, RelativeDirection.LAST));
+                chronoUnitParser,
+                (op, s1, amount, s2, unitInfo) -> {
+                    LocalDateTime now = LocalDateTime.now(clock);
+                    return calculateLastRange(now, unitInfo.unit(), amount, unitInfo.isQuarter());
+                }
+        );
 
         Parser<DateValue> generalizedNextParser = Parsers.sequence(
                 toScanner(keywords.next()),
                 Scanners.WHITESPACES.atLeast(1),
                 numberParser.optional(1),
                 Scanners.WHITESPACES.many(),
-                chronoUnitParser
-        ).source().map(input -> calculateRelativeRangeFromInput(input, clock, keywords, RelativeDirection.NEXT));
+                chronoUnitParser,
+                (op, s1, amount, s2, unitInfo) -> {
+                    LocalDateTime now = LocalDateTime.now(clock);
+                    return calculateNextRange(now, unitInfo.unit(), amount, unitInfo.isQuarter());
+                }
+        );
 
         Parser<DateValue> generalizedThisParser = Parsers.sequence(
                 toScanner(keywords.current()),
                 Scanners.WHITESPACES.atLeast(1),
                 numberParser.optional(1),
                 Scanners.WHITESPACES.many(),
-                chronoUnitParser
-        ).source().map(input -> calculateRelativeRangeFromInput(input, clock, keywords, RelativeDirection.THIS));
+                chronoUnitParser,
+                (op, s1, amount, s2, unitInfo) -> {
+                    LocalDateTime now = LocalDateTime.now(clock);
+                    return calculateThisRange(now, unitInfo.unit(), amount, unitInfo.isQuarter());
+                }
+        );
 
         Parser<String> rangeInclusive = toScanner(keywords.rangeConnectorsInclusive());
         Parser<String> rangeExclusive = toScanner(keywords.rangeConnectorsExclusive());
@@ -248,40 +262,8 @@ public class DateValueParser {
         );
     }
 
-    private enum RelativeDirection { LAST, NEXT, THIS }
-
-    private DateValue calculateRelativeRangeFromInput(String input, Clock clock, LanguageKeywords keywords, RelativeDirection direction) {
-        String lowerInput = input.toLowerCase();
-        int amount = 1;
-        // Try to find a number
-        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\d+").matcher(lowerInput);
-        if (matcher.find()) {
-            amount = Integer.parseInt(matcher.group());
-        }
-
-        ChronoUnit unit = null;
-        String matchedUnitKey = "";
-        for (Map.Entry<String, ChronoUnit> entry : keywords.chronoUnits().entrySet()) {
-            String key = entry.getKey().toLowerCase();
-            if (lowerInput.contains(key)) {
-                if (key.length() > matchedUnitKey.length()) {
-                    unit = entry.getValue();
-                    matchedUnitKey = key;
-                }
-            }
-        }
-
-        LocalDate today = LocalDate.now(clock);
-        LocalDateTime now = LocalDateTime.now(clock);
-
-        return switch (direction) {
-            case LAST -> calculateLastRange(today, now, unit, amount, matchedUnitKey);
-            case NEXT -> calculateNextRange(today, now, unit, amount, matchedUnitKey);
-            case THIS -> calculateThisRange(today, now, unit, amount, matchedUnitKey);
-        };
-    }
-
-    private DateValue calculateLastRange(LocalDate today, LocalDateTime now, ChronoUnit unit, int amount, String matchedUnitKey) {
+    private DateValue calculateLastRange(LocalDateTime now, ChronoUnit unit, int amount, boolean isQuarter) {
+        LocalDate today = now.toLocalDate();
         return switch (unit) {
             case MINUTES -> {
                 LocalDateTime start = now.minusMinutes(amount);
@@ -301,7 +283,7 @@ public class DateValueParser {
                 yield new DateValue.AbsoluteRange(start.atStartOfDay(), startOfThisWeek.atStartOfDay(), true, false);
             }
             case MONTHS -> {
-                if (isQuarter(matchedUnitKey)) {
+                if (isQuarter) {
                     LocalDate startOfThisQuarter = getStartOfQuarter(today);
                     LocalDate start = startOfThisQuarter.minusMonths(amount * 3L);
                     yield new DateValue.AbsoluteRange(start.atStartOfDay(), startOfThisQuarter.atStartOfDay(), true, false);
@@ -320,7 +302,8 @@ public class DateValueParser {
         };
     }
 
-    private DateValue calculateThisRange(LocalDate today, LocalDateTime now, ChronoUnit unit, int amount, String matchedUnitKey) {
+    private DateValue calculateThisRange(LocalDateTime now, ChronoUnit unit, int amount, boolean isQuarter) {
+        LocalDate today = now.toLocalDate();
         return switch (unit) {
             case MINUTES -> {
                 LocalDateTime start = now.minusMinutes(amount - 1L).withNano(0).withSecond(0);
@@ -340,7 +323,7 @@ public class DateValueParser {
                 yield new DateValue.AbsoluteRange(start.atStartOfDay(), startOfThisWeek.plusWeeks(1).atStartOfDay(), true, false);
             }
             case MONTHS -> {
-                if (isQuarter(matchedUnitKey)) {
+                if (isQuarter) {
                     LocalDate startOfThisQuarter = getStartOfQuarter(today);
                     LocalDate start = startOfThisQuarter.minusMonths((amount - 1L) * 3);
                     yield new DateValue.AbsoluteRange(start.atStartOfDay(), startOfThisQuarter.plusMonths(3).atStartOfDay(), true, false);
@@ -359,7 +342,8 @@ public class DateValueParser {
         };
     }
 
-    private DateValue calculateNextRange(LocalDate today, LocalDateTime now, ChronoUnit unit, int amount, String matchedUnitKey) {
+    private DateValue calculateNextRange(LocalDateTime now, ChronoUnit unit, int amount, boolean isQuarter) {
+        LocalDate today = now.toLocalDate();
         return switch (unit) {
             case MINUTES -> {
                 LocalDateTime end = now.plusMinutes(amount);
@@ -377,7 +361,7 @@ public class DateValueParser {
                 yield new DateValue.AbsoluteRange(startOfNextWeek.atStartOfDay(), startOfNextWeek.plusWeeks(amount).atStartOfDay(), true, false);
             }
             case MONTHS -> {
-                if (isQuarter(matchedUnitKey)) {
+                if (isQuarter) {
                     LocalDate startOfNextQuarter = getStartOfQuarter(today).plusMonths(3);
                     yield new DateValue.AbsoluteRange(startOfNextQuarter.atStartOfDay(), startOfNextQuarter.plusMonths(amount * 3L).atStartOfDay(), true, false);
                 } else {
