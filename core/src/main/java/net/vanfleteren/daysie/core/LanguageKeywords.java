@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Builder
@@ -31,24 +32,24 @@ public record LanguageKeywords(
         Map<String, ChronoUnit> chronoUnits,
         Map<String, DayOfWeek> daysOfWeek
     ) {
-        public static final LanguageKeywords ENGLISH = new LanguageKeywords(
-                Set.of("<=", "until"),
-                Set.of("<", "before"),
-                Set.of(">=", "since"),
-                Set.of(">", "after"),
-                Set.of("to","-"),
-                Set.of(),
-                Set.of("today"),
-                Set.of("yesterday"),
-                Set.of("tomorrow"),
-                Set.of("day before yesterday"),
-                Set.of("day after tomorrow"),
-                Set.of("last", "previous", "past"),
-                Set.of("next"),
-                Set.of("this"),
-                Set.of("start of", "beginning of"),
-                Set.of("end of"),
-                Map.ofEntries(
+        public static final LanguageKeywords ENGLISH = LanguageKeywords.builder()
+                .untilInclusive(Set.of("<=", "until"))
+                .untilExclusive(Set.of("<", "before"))
+                .fromInclusive(Set.of(">=", "since"))
+                .fromExclusive(Set.of(">", "after"))
+                .rangeConnectorsInclusive(Set.of("to","-"))
+                .rangeConnectorsExclusive(Set.of())
+                .today(Set.of("today"))
+                .yesterday(Set.of("yesterday"))
+                .tomorrow(Set.of("tomorrow"))
+                .dayBeforeYesterday(Set.of("day before yesterday"))
+                .dayAfterTomorrow(Set.of("day after tomorrow"))
+                .last(Set.of("last", "previous", "past"))
+                .next(Set.of("next"))
+                .current(Set.of("this"))
+                .startOf(Set.of("start of", "beginning of"))
+                .endOf(Set.of("end of"))
+                .chronoUnits(Map.ofEntries(
                         Map.entry("hour", ChronoUnit.HOURS),
                         Map.entry("hours", ChronoUnit.HOURS),
                         Map.entry("minute", ChronoUnit.MINUTES),
@@ -63,8 +64,8 @@ public record LanguageKeywords(
                         Map.entry("weeks", ChronoUnit.WEEKS),
                         Map.entry("day", ChronoUnit.DAYS),
                         Map.entry("days", ChronoUnit.DAYS)
-                ),
-                Map.of(
+                ))
+                .daysOfWeek(Map.of(
                         "monday", DayOfWeek.MONDAY,
                         "tuesday", DayOfWeek.TUESDAY,
                         "wednesday", DayOfWeek.WEDNESDAY,
@@ -72,27 +73,27 @@ public record LanguageKeywords(
                         "friday", DayOfWeek.FRIDAY,
                         "saturday", DayOfWeek.SATURDAY,
                         "sunday", DayOfWeek.SUNDAY
-                )
-        );
+                ))
+                .build();
 
-        public static final LanguageKeywords DUTCH = new LanguageKeywords(
-                Set.of("<=", "tot en met"),
-                Set.of("<", "voor", "tot"),
-                Set.of(">=", "sinds", "vanaf"),
-                Set.of(">", "na"),
-                Set.of("tot", "t/m", "tot en met","-"),
-                Set.of(),
-                Set.of("vandaag"),
-                Set.of("gisteren"),
-                Set.of("morgen"),
-                Set.of("eergisteren"),
-                Set.of("overmorgen"),
-                Set.of("vorige", "laatste", "afgelopen"),
-                Set.of("volgende"),
-                Set.of("deze", "dit"),
-                Set.of("begin van"),
-                Set.of("einde van"),
-                Map.ofEntries(
+        public static final LanguageKeywords DUTCH = LanguageKeywords.builder()
+                .untilInclusive(Set.of("<=", "tot en met"))
+                .untilExclusive(Set.of("<", "voor", "tot"))
+                .fromInclusive(Set.of(">=", "sinds", "vanaf"))
+                .fromExclusive(Set.of(">", "na"))
+                .rangeConnectorsInclusive(Set.of("tot", "t/m", "tot en met","-"))
+                .rangeConnectorsExclusive(Set.of())
+                .today(Set.of("vandaag"))
+                .yesterday(Set.of("gisteren"))
+                .tomorrow(Set.of("morgen"))
+                .dayBeforeYesterday(Set.of("eergisteren"))
+                .dayAfterTomorrow(Set.of("overmorgen"))
+                .last(Set.of("vorige", "laatste", "afgelopen"))
+                .next(Set.of("volgende"))
+                .current(Set.of("deze", "dit"))
+                .startOf(Set.of("begin van"))
+                .endOf(Set.of("einde van"))
+                .chronoUnits(Map.ofEntries(
                         Map.entry("uur", ChronoUnit.HOURS),
                         Map.entry("uren", ChronoUnit.HOURS),
                         Map.entry("minuut", ChronoUnit.MINUTES),
@@ -107,8 +108,8 @@ public record LanguageKeywords(
                         Map.entry("weken", ChronoUnit.WEEKS),
                         Map.entry("dag", ChronoUnit.DAYS),
                         Map.entry("dagen", ChronoUnit.DAYS)
-                ),
-                Map.of(
+                ))
+                .daysOfWeek(Map.of(
                         "maandag", DayOfWeek.MONDAY,
                         "dinsdag", DayOfWeek.TUESDAY,
                         "woensdag", DayOfWeek.WEDNESDAY,
@@ -116,34 +117,38 @@ public record LanguageKeywords(
                         "vrijdag", DayOfWeek.FRIDAY,
                         "zaterdag", DayOfWeek.SATURDAY,
                         "zondag", DayOfWeek.SUNDAY
-                )
-        );
+                ))
+                .build();
 
         public static LanguageKeywords combine(List<LanguageKeywords> keywordsList) {
+            Function<Function<LanguageKeywords, Set<String>>, Set<String>> combineSets = extractor -> keywordsList.stream()
+                    .flatMap(k -> extractor.apply(k).stream())
+                    .collect(Collectors.toUnmodifiableSet());
+
             Map<String, DayOfWeek> combinedDaysOfWeek = new HashMap<>();
             keywordsList.forEach(k -> combinedDaysOfWeek.putAll(k.daysOfWeek()));
             Map<String, ChronoUnit> combinedChronoUnits = new HashMap<>();
             keywordsList.forEach(k -> combinedChronoUnits.putAll(k.chronoUnits()));
 
-            return new LanguageKeywords(
-                    keywordsList.stream().flatMap(k -> k.untilInclusive().stream()).collect(Collectors.toUnmodifiableSet()),
-                    keywordsList.stream().flatMap(k -> k.untilExclusive().stream()).collect(Collectors.toUnmodifiableSet()),
-                    keywordsList.stream().flatMap(k -> k.fromInclusive().stream()).collect(Collectors.toUnmodifiableSet()),
-                    keywordsList.stream().flatMap(k -> k.fromExclusive().stream()).collect(Collectors.toUnmodifiableSet()),
-                    keywordsList.stream().flatMap(k -> k.rangeConnectorsInclusive().stream()).collect(Collectors.toUnmodifiableSet()),
-                    keywordsList.stream().flatMap(k -> k.rangeConnectorsExclusive().stream()).collect(Collectors.toUnmodifiableSet()),
-                    keywordsList.stream().flatMap(k -> k.today().stream()).collect(Collectors.toUnmodifiableSet()),
-                    keywordsList.stream().flatMap(k -> k.yesterday().stream()).collect(Collectors.toUnmodifiableSet()),
-                    keywordsList.stream().flatMap(k -> k.tomorrow().stream()).collect(Collectors.toUnmodifiableSet()),
-                    keywordsList.stream().flatMap(k -> k.dayBeforeYesterday().stream()).collect(Collectors.toUnmodifiableSet()),
-                    keywordsList.stream().flatMap(k -> k.dayAfterTomorrow().stream()).collect(Collectors.toUnmodifiableSet()),
-                    keywordsList.stream().flatMap(k -> k.last().stream()).collect(Collectors.toUnmodifiableSet()),
-                    keywordsList.stream().flatMap(k -> k.next().stream()).collect(Collectors.toUnmodifiableSet()),
-                    keywordsList.stream().flatMap(k -> k.current().stream()).collect(Collectors.toUnmodifiableSet()),
-                    keywordsList.stream().flatMap(k -> k.startOf().stream()).collect(Collectors.toUnmodifiableSet()),
-                    keywordsList.stream().flatMap(k -> k.endOf().stream()).collect(Collectors.toUnmodifiableSet()),
-                    Map.copyOf(combinedChronoUnits),
-                    Map.copyOf(combinedDaysOfWeek)
-            );
+            return LanguageKeywords.builder()
+                    .untilInclusive(combineSets.apply(LanguageKeywords::untilInclusive))
+                    .untilExclusive(combineSets.apply(LanguageKeywords::untilExclusive))
+                    .fromInclusive(combineSets.apply(LanguageKeywords::fromInclusive))
+                    .fromExclusive(combineSets.apply(LanguageKeywords::fromExclusive))
+                    .rangeConnectorsInclusive(combineSets.apply(LanguageKeywords::rangeConnectorsInclusive))
+                    .rangeConnectorsExclusive(combineSets.apply(LanguageKeywords::rangeConnectorsExclusive))
+                    .today(combineSets.apply(LanguageKeywords::today))
+                    .yesterday(combineSets.apply(LanguageKeywords::yesterday))
+                    .tomorrow(combineSets.apply(LanguageKeywords::tomorrow))
+                    .dayBeforeYesterday(combineSets.apply(LanguageKeywords::dayBeforeYesterday))
+                    .dayAfterTomorrow(combineSets.apply(LanguageKeywords::dayAfterTomorrow))
+                    .last(combineSets.apply(LanguageKeywords::last))
+                    .next(combineSets.apply(LanguageKeywords::next))
+                    .current(combineSets.apply(LanguageKeywords::current))
+                    .startOf(combineSets.apply(LanguageKeywords::startOf))
+                    .endOf(combineSets.apply(LanguageKeywords::endOf))
+                    .chronoUnits(Map.copyOf(combinedChronoUnits))
+                    .daysOfWeek(Map.copyOf(combinedDaysOfWeek))
+                    .build();
         }
 }
