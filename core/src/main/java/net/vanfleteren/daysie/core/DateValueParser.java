@@ -427,6 +427,14 @@ public class DateValueParser {
                             LocalDate tomorrow = LocalDate.now(clock).plusDays(1);
                             return (DateValue) new DateValue.AbsoluteRange(tomorrow.atStartOfDay(), tomorrow.plusDays(1).atStartOfDay(), true, false);
                         })),
+                        keywords.dayBeforeYesterday().stream().map(s -> Scanners.stringCaseInsensitive(s).map(ignored -> {
+                            LocalDate date = LocalDate.now(clock).minusDays(2);
+                            return (DateValue) new DateValue.AbsoluteRange(date.atStartOfDay(), date.plusDays(1).atStartOfDay(), true, false);
+                        })),
+                        keywords.dayAfterTomorrow().stream().map(s -> Scanners.stringCaseInsensitive(s).map(ignored -> {
+                            LocalDate date = LocalDate.now(clock).plusDays(2);
+                            return (DateValue) new DateValue.AbsoluteRange(date.atStartOfDay(), date.plusDays(1).atStartOfDay(), true, false);
+                        })),
                         keywords.daysOfWeek().entrySet().stream().map(entry -> Scanners.stringCaseInsensitive(entry.getKey()).map(ignored -> {
                             LocalDate day = LocalDate.now(clock).with(TemporalAdjusters.previousOrSame(entry.getValue()));
                             return (DateValue) new DateValue.AbsoluteRange(day.atStartOfDay(), day.plusDays(1).atStartOfDay(), true, false);

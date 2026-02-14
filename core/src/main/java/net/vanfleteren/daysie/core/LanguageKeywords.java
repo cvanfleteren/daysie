@@ -1,5 +1,7 @@
 package net.vanfleteren.daysie.core;
 
+import lombok.Builder;
+
 import java.time.DayOfWeek;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -8,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Builder
 public record LanguageKeywords(
         Set<String> untilInclusive,
         Set<String> untilExclusive,
@@ -18,6 +21,8 @@ public record LanguageKeywords(
         Set<String> today,
         Set<String> yesterday,
         Set<String> tomorrow,
+        Set<String> dayBeforeYesterday,
+        Set<String> dayAfterTomorrow,
         Set<String> last,
         Set<String> next,
         Set<String> current,
@@ -36,6 +41,8 @@ public record LanguageKeywords(
                 Set.of("today"),
                 Set.of("yesterday"),
                 Set.of("tomorrow"),
+                Set.of("day before yesterday"),
+                Set.of("day after tomorrow"),
                 Set.of("last", "previous", "past"),
                 Set.of("next"),
                 Set.of("this"),
@@ -78,6 +85,8 @@ public record LanguageKeywords(
                 Set.of("vandaag"),
                 Set.of("gisteren"),
                 Set.of("morgen"),
+                Set.of("eergisteren"),
+                Set.of("overmorgen"),
                 Set.of("vorige", "laatste", "afgelopen"),
                 Set.of("volgende"),
                 Set.of("deze", "dit"),
@@ -126,6 +135,8 @@ public record LanguageKeywords(
                     keywordsList.stream().flatMap(k -> k.today().stream()).collect(Collectors.toUnmodifiableSet()),
                     keywordsList.stream().flatMap(k -> k.yesterday().stream()).collect(Collectors.toUnmodifiableSet()),
                     keywordsList.stream().flatMap(k -> k.tomorrow().stream()).collect(Collectors.toUnmodifiableSet()),
+                    keywordsList.stream().flatMap(k -> k.dayBeforeYesterday().stream()).collect(Collectors.toUnmodifiableSet()),
+                    keywordsList.stream().flatMap(k -> k.dayAfterTomorrow().stream()).collect(Collectors.toUnmodifiableSet()),
                     keywordsList.stream().flatMap(k -> k.last().stream()).collect(Collectors.toUnmodifiableSet()),
                     keywordsList.stream().flatMap(k -> k.next().stream()).collect(Collectors.toUnmodifiableSet()),
                     keywordsList.stream().flatMap(k -> k.current().stream()).collect(Collectors.toUnmodifiableSet()),
