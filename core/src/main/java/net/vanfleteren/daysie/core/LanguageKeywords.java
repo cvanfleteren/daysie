@@ -19,6 +19,7 @@ public record LanguageKeywords(
         Set<String> yesterday,
         Set<String> tomorrow,
         Set<String> last,
+        Set<String> next,
         Map<String, ChronoUnit> chronoUnits,
         Map<String, DayOfWeek> daysOfWeek
     ) {
@@ -32,18 +33,23 @@ public record LanguageKeywords(
                 Set.of("today"),
                 Set.of("yesterday"),
                 Set.of("tomorrow"),
-                Set.of("last", "previous"),
-                Map.of(
-                        "year", ChronoUnit.YEARS,
-                        "years", ChronoUnit.YEARS,
-                        "quarter", ChronoUnit.MONTHS,
-                        "quarters", ChronoUnit.MONTHS,
-                        "month", ChronoUnit.MONTHS,
-                        "months", ChronoUnit.MONTHS,
-                        "week", ChronoUnit.WEEKS,
-                        "weeks", ChronoUnit.WEEKS,
-                        "day", ChronoUnit.DAYS,
-                        "days", ChronoUnit.DAYS
+                Set.of("last", "previous", "past"),
+                Set.of("next"),
+                Map.ofEntries(
+                        Map.entry("hour", ChronoUnit.HOURS),
+                        Map.entry("hours", ChronoUnit.HOURS),
+                        Map.entry("minute", ChronoUnit.MINUTES),
+                        Map.entry("minutes", ChronoUnit.MINUTES),
+                        Map.entry("year", ChronoUnit.YEARS),
+                        Map.entry("years", ChronoUnit.YEARS),
+                        Map.entry("quarter", ChronoUnit.MONTHS),
+                        Map.entry("quarters", ChronoUnit.MONTHS),
+                        Map.entry("month", ChronoUnit.MONTHS),
+                        Map.entry("months", ChronoUnit.MONTHS),
+                        Map.entry("week", ChronoUnit.WEEKS),
+                        Map.entry("weeks", ChronoUnit.WEEKS),
+                        Map.entry("day", ChronoUnit.DAYS),
+                        Map.entry("days", ChronoUnit.DAYS)
                 ),
                 Map.of(
                         "monday", DayOfWeek.MONDAY,
@@ -66,18 +72,23 @@ public record LanguageKeywords(
                 Set.of("vandaag"),
                 Set.of("gisteren"),
                 Set.of("morgen"),
-                Set.of("vorige", "laatste"),
-                Map.of(
-                        "jaar", ChronoUnit.YEARS,
-                        "jaren", ChronoUnit.YEARS,
-                        "kwartaal", ChronoUnit.MONTHS,
-                        "kwartalen", ChronoUnit.MONTHS,
-                        "maand", ChronoUnit.MONTHS,
-                        "maanden", ChronoUnit.MONTHS,
-                        "week", ChronoUnit.WEEKS,
-                        "weken", ChronoUnit.WEEKS,
-                        "dag", ChronoUnit.DAYS,
-                        "dagen", ChronoUnit.DAYS
+                Set.of("vorige", "laatste", "afgelopen"),
+                Set.of("volgende"),
+                Map.ofEntries(
+                        Map.entry("uur", ChronoUnit.HOURS),
+                        Map.entry("uren", ChronoUnit.HOURS),
+                        Map.entry("minuut", ChronoUnit.MINUTES),
+                        Map.entry("minuten", ChronoUnit.MINUTES),
+                        Map.entry("jaar", ChronoUnit.YEARS),
+                        Map.entry("jaren", ChronoUnit.YEARS),
+                        Map.entry("kwartaal", ChronoUnit.MONTHS),
+                        Map.entry("kwartalen", ChronoUnit.MONTHS),
+                        Map.entry("maand", ChronoUnit.MONTHS),
+                        Map.entry("maanden", ChronoUnit.MONTHS),
+                        Map.entry("week", ChronoUnit.WEEKS),
+                        Map.entry("weken", ChronoUnit.WEEKS),
+                        Map.entry("dag", ChronoUnit.DAYS),
+                        Map.entry("dagen", ChronoUnit.DAYS)
                 ),
                 Map.of(
                         "maandag", DayOfWeek.MONDAY,
@@ -107,6 +118,7 @@ public record LanguageKeywords(
                     keywordsList.stream().flatMap(k -> k.yesterday().stream()).collect(Collectors.toUnmodifiableSet()),
                     keywordsList.stream().flatMap(k -> k.tomorrow().stream()).collect(Collectors.toUnmodifiableSet()),
                     keywordsList.stream().flatMap(k -> k.last().stream()).collect(Collectors.toUnmodifiableSet()),
+                    keywordsList.stream().flatMap(k -> k.next().stream()).collect(Collectors.toUnmodifiableSet()),
                     Map.copyOf(combinedChronoUnits),
                     Map.copyOf(combinedDaysOfWeek)
             );
