@@ -43,7 +43,7 @@ public class DateValueParser {
         Parser<ChronoUnitInfo> chronoUnitParser = Parsers.or(
                 keywords.chronoUnits().entrySet().stream()
                         .sorted((e1, e2) -> e2.getKey().length() - e1.getKey().length())
-                        .map(entry -> Scanners.stringCaseInsensitive(entry.getKey()).map(ignored -> new ChronoUnitInfo(entry.getValue(), isQuarter(entry.getKey()))))
+                        .map(entry -> toScanner(Set.of(entry.getKey())).map(ignored -> new ChronoUnitInfo(entry.getValue(), isQuarter(entry.getKey()))))
                         .toList()
         );
 
@@ -331,6 +331,10 @@ public class DateValueParser {
     private DateValue calculateLastRange(LocalDateTime now, ChronoUnit unit, int amount, boolean isQuarter) {
         LocalDate today = now.toLocalDate();
         return switch (unit) {
+            case SECONDS -> {
+                LocalDateTime start = now.minusSeconds(amount);
+                yield new DateValue.AbsoluteRange(start, now, true, false);
+            }
             case MINUTES -> {
                 LocalDateTime start = now.minusMinutes(amount);
                 yield new DateValue.AbsoluteRange(start, now, true, false);
@@ -371,6 +375,10 @@ public class DateValueParser {
     private DateValue calculateThisRange(LocalDateTime now, ChronoUnit unit, int amount, boolean isQuarter) {
         LocalDate today = now.toLocalDate();
         return switch (unit) {
+            case SECONDS -> {
+                LocalDateTime start = now.minusSeconds(amount - 1L).withNano(0);
+                yield new DateValue.AbsoluteRange(start, start.plusSeconds(1), true, false);
+            }
             case MINUTES -> {
                 LocalDateTime start = now.minusMinutes(amount - 1L).withNano(0).withSecond(0);
                 yield new DateValue.AbsoluteRange(start, start.plusMinutes(1), true, false);
@@ -411,6 +419,10 @@ public class DateValueParser {
     private DateValue calculateNextRange(LocalDateTime now, ChronoUnit unit, int amount, boolean isQuarter) {
         LocalDate today = now.toLocalDate();
         return switch (unit) {
+            case SECONDS -> {
+                LocalDateTime end = now.plusSeconds(amount);
+                yield new DateValue.AbsoluteRange(now, end, true, false);
+            }
             case MINUTES -> {
                 LocalDateTime end = now.plusMinutes(amount);
                 yield new DateValue.AbsoluteRange(now, end, true, false);

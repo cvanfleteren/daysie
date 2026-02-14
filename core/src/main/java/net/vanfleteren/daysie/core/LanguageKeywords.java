@@ -38,7 +38,7 @@ public record LanguageKeywords(
         Map<String, DayOfWeek> daysOfWeek
     ) {
         public static final LanguageKeywords ENGLISH = LanguageKeywords.builder()
-                .untilInclusive(Set.of("<=", "until"))
+                .untilInclusive(Set.of("<=", "until", "up to"))
                 .untilExclusive(Set.of("<", "before"))
                 .fromInclusive(Set.of(">=", "since", "from"))
                 .fromExclusive(Set.of(">", "after"))
@@ -62,18 +62,26 @@ public record LanguageKeywords(
                 .chronoUnits(Map.ofEntries(
                         Map.entry("hour", ChronoUnit.HOURS),
                         Map.entry("hours", ChronoUnit.HOURS),
+                        Map.entry("h", ChronoUnit.HOURS),
                         Map.entry("minute", ChronoUnit.MINUTES),
                         Map.entry("minutes", ChronoUnit.MINUTES),
+                        Map.entry("m", ChronoUnit.MINUTES),
+                        Map.entry("second", ChronoUnit.SECONDS),
+                        Map.entry("seconds", ChronoUnit.SECONDS),
+                        Map.entry("s", ChronoUnit.SECONDS),
                         Map.entry("year", ChronoUnit.YEARS),
                         Map.entry("years", ChronoUnit.YEARS),
+                        Map.entry("y", ChronoUnit.YEARS),
                         Map.entry("quarter", ChronoUnit.MONTHS),
                         Map.entry("quarters", ChronoUnit.MONTHS),
                         Map.entry("month", ChronoUnit.MONTHS),
                         Map.entry("months", ChronoUnit.MONTHS),
                         Map.entry("week", ChronoUnit.WEEKS),
                         Map.entry("weeks", ChronoUnit.WEEKS),
+                        Map.entry("w", ChronoUnit.WEEKS),
                         Map.entry("day", ChronoUnit.DAYS),
-                        Map.entry("days", ChronoUnit.DAYS)
+                        Map.entry("days", ChronoUnit.DAYS),
+                        Map.entry("d", ChronoUnit.DAYS)
                 ))
                 .daysOfWeek(Map.of(
                         "monday", DayOfWeek.MONDAY,
@@ -111,18 +119,26 @@ public record LanguageKeywords(
                 .chronoUnits(Map.ofEntries(
                         Map.entry("uur", ChronoUnit.HOURS),
                         Map.entry("uren", ChronoUnit.HOURS),
+                        Map.entry("u", ChronoUnit.HOURS),
                         Map.entry("minuut", ChronoUnit.MINUTES),
                         Map.entry("minuten", ChronoUnit.MINUTES),
+                        Map.entry("m", ChronoUnit.MINUTES),
+                        Map.entry("seconde", ChronoUnit.SECONDS),
+                        Map.entry("seconden", ChronoUnit.SECONDS),
+                        Map.entry("s", ChronoUnit.SECONDS),
                         Map.entry("jaar", ChronoUnit.YEARS),
                         Map.entry("jaren", ChronoUnit.YEARS),
+                        Map.entry("j", ChronoUnit.YEARS),
                         Map.entry("kwartaal", ChronoUnit.MONTHS),
                         Map.entry("kwartalen", ChronoUnit.MONTHS),
                         Map.entry("maand", ChronoUnit.MONTHS),
                         Map.entry("maanden", ChronoUnit.MONTHS),
                         Map.entry("week", ChronoUnit.WEEKS),
                         Map.entry("weken", ChronoUnit.WEEKS),
+                        Map.entry("w", ChronoUnit.WEEKS),
                         Map.entry("dag", ChronoUnit.DAYS),
-                        Map.entry("dagen", ChronoUnit.DAYS)
+                        Map.entry("dagen", ChronoUnit.DAYS),
+                        Map.entry("d", ChronoUnit.DAYS)
                 ))
                 .daysOfWeek(Map.of(
                         "maandag", DayOfWeek.MONDAY,

@@ -56,6 +56,7 @@ class DateValueParserTest {
                 "'BEFORE 2026-01-01',      '(-∞,2026-01-01T00:00)'",
                 "'SiNcE 2026-01-01',       '[2026-01-01T00:00, ∞)'",
                 "'2026-02',                '[2026-02-01T00:00,2026-03-01T00:00)'",
+                "'up to 2026-02-01',       '(-∞,2026-02-02T00:00)'",
 
                 "'2026-01-01 to 2026-02-01', '[2026-01-01T00:00,2026-02-02T00:00)'",
                 "'2026-01-01 - 2026-02-01',  '[2026-01-01T00:00,2026-02-02T00:00)'",
@@ -137,6 +138,9 @@ class DateValueParserTest {
                 "last 5 minutes,         '[2026-02-14T09:55,2026-02-14T10:00)'",
                 "previous 5 minutes,     '[2026-02-14T09:55,2026-02-14T10:00)'",
                 "afgelopen 10 minuten,   '[2026-02-14T09:50,2026-02-14T10:00)'",
+                "last 30s,               '[2026-02-14T09:59:30,2026-02-14T10:00)'",
+                "last 2h,                '[2026-02-14T08:00,2026-02-14T10:00)'",
+                "afgelopen 4u,           '[2026-02-14T06:00,2026-02-14T10:00)'",
         })
         void parse_pastRelativeInput_returnsExpectedToString(String input, String expectedToString) {
             parseAndAssert(input, expectedToString);
@@ -154,6 +158,8 @@ class DateValueParserTest {
                 "next month,             '[2026-03-01T00:00,2026-04-01T00:00)'",
                 "next year,              '[2027-01-01T00:00,2028-01-01T00:00)'",
                 "volgende 2 kwartalen,   '[2026-04-01T00:00,2026-10-01T00:00)'",
+                "next 10m,               '[2026-02-14T10:00,2026-02-14T10:10)'",
+                "next 2w,                '[2026-02-16T00:00,2026-03-02T00:00)'",
         })
         void parse_futureRelativeInput_returnsExpectedToString(String input, String expectedToString) {
             parseAndAssert(input, expectedToString);
@@ -168,6 +174,7 @@ class DateValueParserTest {
                 "deze week,               '[2026-02-09T00:00,2026-02-16T00:00)'",
                 "dit jaar,                '[2026-01-01T00:00,2027-01-01T00:00)'",
                 "this 2 months,           '[2026-01-01T00:00,2026-03-01T00:00)'",
+                "this 1y,                '[2026-01-01T00:00,2027-01-01T00:00)'",
         })
         void parse_thisRelativeInput_returnsExpectedToString(String input, String expectedToString) {
             parseAndAssert(input, expectedToString);
