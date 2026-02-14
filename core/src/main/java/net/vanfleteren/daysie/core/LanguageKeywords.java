@@ -10,7 +10,10 @@ public record LanguageKeywords(
         Set<String> fromInclusive,
         Set<String> fromExclusive,
         Set<String> rangeConnectorsInclusive,
-        Set<String> rangeConnectorsExclusive
+        Set<String> rangeConnectorsExclusive,
+        Set<String> today,
+        Set<String> yesterday,
+        Set<String> tomorrow
 ) {
     public static final LanguageKeywords ENGLISH = new LanguageKeywords(
             Set.of("<=", "until"),
@@ -18,7 +21,10 @@ public record LanguageKeywords(
             Set.of(">=", "since"),
             Set.of(">", "after"),
             Set.of("to","-"),
-            Set.of()
+            Set.of(),
+            Set.of("today"),
+            Set.of("yesterday"),
+            Set.of("tomorrow")
     );
 
     public static final LanguageKeywords DUTCH = new LanguageKeywords(
@@ -27,7 +33,10 @@ public record LanguageKeywords(
             Set.of(">=", "sinds", "vanaf"),
             Set.of(">", "na"),
             Set.of("tot", "t/m", "tot en met","-"),
-            Set.of()
+            Set.of(),
+            Set.of("vandaag"),
+            Set.of("gisteren"),
+            Set.of("morgen")
     );
 
     public static LanguageKeywords combine(List<LanguageKeywords> keywordsList) {
@@ -37,7 +46,10 @@ public record LanguageKeywords(
                 keywordsList.stream().flatMap(k -> k.fromInclusive().stream()).collect(Collectors.toUnmodifiableSet()),
                 keywordsList.stream().flatMap(k -> k.fromExclusive().stream()).collect(Collectors.toUnmodifiableSet()),
                 keywordsList.stream().flatMap(k -> k.rangeConnectorsInclusive().stream()).collect(Collectors.toUnmodifiableSet()),
-                keywordsList.stream().flatMap(k -> k.rangeConnectorsExclusive().stream()).collect(Collectors.toUnmodifiableSet())
+                keywordsList.stream().flatMap(k -> k.rangeConnectorsExclusive().stream()).collect(Collectors.toUnmodifiableSet()),
+                keywordsList.stream().flatMap(k -> k.today().stream()).collect(Collectors.toUnmodifiableSet()),
+                keywordsList.stream().flatMap(k -> k.yesterday().stream()).collect(Collectors.toUnmodifiableSet()),
+                keywordsList.stream().flatMap(k -> k.tomorrow().stream()).collect(Collectors.toUnmodifiableSet())
         );
     }
 }

@@ -5,51 +5,59 @@ import org.jparsec.Parsers;
 import org.jparsec.Scanners;
 import org.jparsec.pattern.Patterns;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.stream.Stream;
 
 public class DateValueParser {
 
     private final Parser<DateValue> dateValueParser;
+    private final Parser<LocalDateTime> absoluteDateTimeParser;
 
     public DateValueParser() {
-        this(LanguageKeywords.ENGLISH);
+        this(LanguageKeywords.ENGLISH, Clock.systemDefaultZone());
     }
 
     public DateValueParser(LanguageKeywords keywords) {
-        Parser<String> untilInclusive = Parsers.or(keywords.untilInclusive().stream().map(Scanners::string).toList()).source();
-        Parser<String> untilExclusive = Parsers.or(keywords.untilExclusive().stream().map(Scanners::string).toList()).source();
+        this(keywords, Clock.systemDefaultZone());
+    }
+
+    public DateValueParser(LanguageKeywords keywords, Clock clock) {
+        this.absoluteDateTimeParser = createAbsoluteDateTimeParser(keywords, clock);
+        Parser<String> untilInclusive = Parsers.or(keywords.untilInclusive().stream().sorted((a, b) -> b.length() - a.length()).map(Scanners::string).toList()).source();
+        Parser<String> untilExclusive = Parsers.or(keywords.untilExclusive().stream().sorted((a, b) -> b.length() - a.length()).map(Scanners::string).toList()).source();
         Parser<String> untilOp = Parsers.or(untilInclusive, untilExclusive);
 
         Parser<DateValue> untilAbsoluteDate = Parsers.sequence(
                 untilOp,
                 Scanners.WHITESPACES.many(),
-                ABSOLUTE_DATE_TIME,
+                absoluteDateTimeParser,
                 (op, spaces, date) -> new DateValue.UntilAbsoluteDate(date, keywords.untilInclusive().contains(op))
         );
 
-        Parser<String> fromInclusive = Parsers.or(keywords.fromInclusive().stream().map(Scanners::string).toList()).source();
-        Parser<String> fromExclusive = Parsers.or(keywords.fromExclusive().stream().map(Scanners::string).toList()).source();
+        Parser<String> fromInclusive = Parsers.or(keywords.fromInclusive().stream().sorted((a, b) -> b.length() - a.length()).map(Scanners::string).toList()).source();
+        Parser<String> fromExclusive = Parsers.or(keywords.fromExclusive().stream().sorted((a, b) -> b.length() - a.length()).map(Scanners::string).toList()).source();
         Parser<String> fromOp = Parsers.or(fromInclusive, fromExclusive);
 
         Parser<DateValue> fromAbsoluteDate = Parsers.sequence(
                 fromOp,
                 Scanners.WHITESPACES.many(),
-                ABSOLUTE_DATE_TIME,
+                absoluteDateTimeParser,
                 (op, spaces, date) -> new DateValue.FromAbsoluteDate(date, keywords.fromInclusive().contains(op))
         );
 
-        Parser<String> rangeInclusive = Parsers.or(keywords.rangeConnectorsInclusive().stream().map(Scanners::string).toList()).source();
-        Parser<String> rangeExclusive = Parsers.or(keywords.rangeConnectorsExclusive().stream().map(Scanners::string).toList()).source();
+        Parser<String> rangeInclusive = Parsers.or(keywords.rangeConnectorsInclusive().stream().sorted((a, b) -> b.length() - a.length()).map(Scanners::string).toList()).source();
+        Parser<String> rangeExclusive = Parsers.or(keywords.rangeConnectorsExclusive().stream().sorted((a, b) -> b.length() - a.length()).map(Scanners::string).toList()).source();
         Parser<String> rangeOp = Parsers.or(rangeInclusive, rangeExclusive);
 
         Parser<DateValue> absoluteRange = Parsers.sequence(
-                ABSOLUTE_DATE_TIME,
+                absoluteDateTimeParser,
                 Scanners.WHITESPACES.many(),
                 rangeOp,
                 Scanners.WHITESPACES.many(),
-                ABSOLUTE_DATE_TIME,
+                absoluteDateTimeParser,
                 (from, s1, op, s2, until) -> new DateValue.AbsoluteRange(from, until, true, keywords.rangeConnectorsInclusive().contains(op))
         );
 
@@ -57,8 +65,20 @@ public class DateValueParser {
                 absoluteRange,
                 untilAbsoluteDate,
                 fromAbsoluteDate,
-                ABSOLUTE_DATE_TIME.map(DateValue.AbsoluteDate::new)
+                absoluteDateTimeParser.map(DateValue.AbsoluteDate::new)
         );
+    }
+
+    private static Parser<LocalDateTime> createAbsoluteDateTimeParser(LanguageKeywords keywords, Clock clock) {
+        Parser<LocalDateTime> relativeDate = Parsers.or(
+                Stream.of(
+                        keywords.today().stream().map(s -> Scanners.string(s).map(ignored -> LocalDate.now(clock).atStartOfDay())),
+                        keywords.yesterday().stream().map(s -> Scanners.string(s).map(ignored -> LocalDate.now(clock).minusDays(1).atStartOfDay())),
+                        keywords.tomorrow().stream().map(s -> Scanners.string(s).map(ignored -> LocalDate.now(clock).plusDays(1).atStartOfDay()))
+                ).flatMap(s -> s).sorted((a, b) -> 0).toList() // Placeholder to allow sorting if needed, but we use longest() below
+        );
+
+        return Parsers.longest(DATE_TIME, DATE_ONLY, relativeDate);
     }
 
     private static final Parser<LocalDate> DATE = Patterns.regex("\\d{4}-\\d{2}-\\d{2}")
@@ -80,7 +100,9 @@ public class DateValueParser {
 
     private static final Parser<LocalDateTime> DATE_ONLY = DATE.map(LocalDate::atStartOfDay);
 
-    static final Parser<LocalDateTime> ABSOLUTE_DATE_TIME = Parsers.or(DATE_TIME, DATE_ONLY);
+    public Parser<LocalDateTime> absoluteDateTimeParser() {
+        return absoluteDateTimeParser;
+    }
 
     public Parser<DateValue> parser() {
         return dateValueParser;
