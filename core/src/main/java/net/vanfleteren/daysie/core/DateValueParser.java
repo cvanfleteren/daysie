@@ -21,8 +21,8 @@ public class DateValueParser {
     private static final Comparator<String> BY_LENGTH_DESC = Comparator.comparingInt(String::length).reversed();
 
     private final Parser<DateValue> dateValueParser;
-    private final Parser<LocalDateTime> absoluteDateTimeParser;
-    private final Parser<LocalDateTime> dateOnlyParser;
+    private final Parser<DateValue> absoluteDateTimeParser;
+    private final Parser<DateValue> dateOnlyParser;
 
     public DateValueParser() {
         this(LanguageKeywords.ENGLISH, Clock.systemDefaultZone());
@@ -43,7 +43,25 @@ public class DateValueParser {
                 untilOp,
                 Scanners.WHITESPACES.many(),
                 absoluteDateTimeParser,
-                (op, spaces, date) -> new DateValue.UntilAbsoluteDate(date, containsIgnoreCase(keywords.untilInclusive(), op))
+                (op, spaces, dateValue) -> {
+                    LocalDateTime date;
+                    boolean inclusive;
+                    if (dateValue instanceof DateValue.AbsoluteDate ad) {
+                        date = ad.date();
+                        inclusive = containsIgnoreCase(keywords.untilInclusive(), op);
+                    } else if (dateValue instanceof DateValue.AbsoluteRange ar) {
+                        if (containsIgnoreCase(keywords.untilInclusive(), op)) {
+                            date = ar.until();
+                            inclusive = ar.untilInclusive();
+                        } else {
+                            date = ar.from();
+                            inclusive = false;
+                        }
+                    } else {
+                        throw new IllegalStateException("Unexpected DateValue type: " + dateValue.getClass());
+                    }
+                    return new DateValue.UntilAbsoluteDate(date, inclusive);
+                }
         );
 
         Parser<String> fromInclusive = toScanner(keywords.fromInclusive());
@@ -55,13 +73,32 @@ public class DateValueParser {
                         fromExclusive,
                         Scanners.WHITESPACES.many(),
                         dateOnlyParser,
-                        (op, spaces, date) -> new DateValue.FromAbsoluteDate(date.plusDays(1), true)
+                        (op, spaces, dateValue) -> {
+                            LocalDateTime date;
+                            if (dateValue instanceof DateValue.AbsoluteRange ar) {
+                                date = ar.from();
+                            } else {
+                                throw new IllegalStateException("Unexpected DateValue type for dateOnlyParser: " + dateValue.getClass());
+                            }
+                            return new DateValue.FromAbsoluteDate(date.plusDays(1), true);
+                        }
                 ),
                 Parsers.sequence(
                         fromOp,
                         Scanners.WHITESPACES.many(),
                         absoluteDateTimeParser,
-                        (op, spaces, date) -> new DateValue.FromAbsoluteDate(date, containsIgnoreCase(keywords.fromInclusive(), op))
+                        (op, spaces, dateValue) -> {
+                            LocalDateTime date;
+                            boolean inclusive = containsIgnoreCase(keywords.fromInclusive(), op);
+                            if (dateValue instanceof DateValue.AbsoluteDate ad) {
+                                date = ad.date();
+                            } else if (dateValue instanceof DateValue.AbsoluteRange ar) {
+                                date = ar.from();
+                            } else {
+                                throw new IllegalStateException("Unexpected DateValue type: " + dateValue.getClass());
+                            }
+                            return new DateValue.FromAbsoluteDate(date, inclusive);
+                        }
                 )
         );
 
@@ -75,7 +112,36 @@ public class DateValueParser {
                 rangeOp,
                 Scanners.WHITESPACES.many(),
                 absoluteDateTimeParser,
-                (from, s1, op, s2, until) -> new DateValue.AbsoluteRange(from, until, true, containsIgnoreCase(keywords.rangeConnectorsInclusive(), op))
+                (fromValue, s1, op, s2, untilValue) -> {
+                    LocalDateTime from;
+                    LocalDateTime until;
+                    boolean isUntilInclusive;
+
+                    if (fromValue instanceof DateValue.AbsoluteDate ad) {
+                        from = ad.date();
+                    } else if (fromValue instanceof DateValue.AbsoluteRange ar) {
+                        from = ar.from();
+                    } else {
+                        throw new IllegalStateException("Unexpected DateValue type: " + fromValue.getClass());
+                    }
+
+                    if (untilValue instanceof DateValue.AbsoluteDate ad) {
+                        until = ad.date();
+                        isUntilInclusive = containsIgnoreCase(keywords.rangeConnectorsInclusive(), op);
+                    } else if (untilValue instanceof DateValue.AbsoluteRange ar) {
+                        if (containsIgnoreCase(keywords.rangeConnectorsInclusive(), op)) {
+                            until = ar.until();
+                            isUntilInclusive = ar.untilInclusive();
+                        } else {
+                            until = ar.from();
+                            isUntilInclusive = false;
+                        }
+                    } else {
+                        throw new IllegalStateException("Unexpected DateValue type: " + untilValue.getClass());
+                    }
+
+                    return new DateValue.AbsoluteRange(from, until, true, isUntilInclusive);
+                }
         );
 
         Parser<Integer> numberParser = Scanners.INTEGER.map(Integer::parseInt);
@@ -112,13 +178,13 @@ public class DateValueParser {
         ).source().map(input -> calculateRelativeRangeFromInput(input, clock, keywords, RelativeDirection.THIS));
 
         this.dateValueParser = Parsers.or(
-                absoluteRange,
                 generalizedLastParser,
                 generalizedNextParser,
                 generalizedThisParser,
                 untilAbsoluteDate,
                 fromAbsoluteDate,
-                absoluteDateTimeParser.map(DateValue.AbsoluteDate::new)
+                absoluteRange,
+                absoluteDateTimeParser
         );
     }
 
@@ -286,21 +352,40 @@ public class DateValueParser {
         return Parsers.or(keywords.stream().sorted(BY_LENGTH_DESC).map(Scanners::stringCaseInsensitive).toList()).source();
     }
 
-    private static Parser<LocalDateTime> createDateOnlyParser(LanguageKeywords keywords, Clock clock) {
-        Parser<LocalDateTime> relativeDate = Parsers.or(
+    private static Parser<DateValue> createDateOnlyParser(LanguageKeywords keywords, Clock clock) {
+        Parser<DateValue> relativeDate = Parsers.or(
                 Stream.of(
-                        keywords.today().stream().map(s -> Scanners.stringCaseInsensitive(s).map(ignored -> LocalDate.now(clock).atStartOfDay())),
-                        keywords.yesterday().stream().map(s -> Scanners.stringCaseInsensitive(s).map(ignored -> LocalDate.now(clock).minusDays(1).atStartOfDay())),
-                        keywords.tomorrow().stream().map(s -> Scanners.stringCaseInsensitive(s).map(ignored -> LocalDate.now(clock).plusDays(1).atStartOfDay())),
-                        keywords.daysOfWeek().entrySet().stream().map(entry -> Scanners.stringCaseInsensitive(entry.getKey()).map(ignored -> LocalDate.now(clock).with(TemporalAdjusters.previousOrSame(entry.getValue())).atStartOfDay()))
+                        keywords.today().stream().map(s -> Scanners.stringCaseInsensitive(s).map(ignored -> {
+                            LocalDate today = LocalDate.now(clock);
+                            return (DateValue) new DateValue.AbsoluteRange(today.atStartOfDay(), today.plusDays(1).atStartOfDay(), true, false);
+                        })),
+                        keywords.yesterday().stream().map(s -> Scanners.stringCaseInsensitive(s).map(ignored -> {
+                            LocalDate yesterday = LocalDate.now(clock).minusDays(1);
+                            return (DateValue) new DateValue.AbsoluteRange(yesterday.atStartOfDay(), yesterday.plusDays(1).atStartOfDay(), true, false);
+                        })),
+                        keywords.tomorrow().stream().map(s -> Scanners.stringCaseInsensitive(s).map(ignored -> {
+                            LocalDate tomorrow = LocalDate.now(clock).plusDays(1);
+                            return (DateValue) new DateValue.AbsoluteRange(tomorrow.atStartOfDay(), tomorrow.plusDays(1).atStartOfDay(), true, false);
+                        })),
+                        keywords.daysOfWeek().entrySet().stream().map(entry -> Scanners.stringCaseInsensitive(entry.getKey()).map(ignored -> {
+                            LocalDate day = LocalDate.now(clock).with(TemporalAdjusters.previousOrSame(entry.getValue()));
+                            return (DateValue) new DateValue.AbsoluteRange(day.atStartOfDay(), day.plusDays(1).atStartOfDay(), true, false);
+                        }))
                 ).flatMap(s -> s).toList()
         );
 
-        return Parsers.or(DATE_ONLY.notFollowedBy(Scanners.WHITESPACES.many().next(Scanners.isChar(Character::isDigit))), relativeDate);
+        return Parsers.or(
+                DATE_ONLY.notFollowedBy(Scanners.WHITESPACES.many().next(Scanners.isChar(Character::isDigit)))
+                        .map(date -> new DateValue.AbsoluteRange(date, date.plusDays(1), true, false)),
+                relativeDate
+        );
     }
 
-    private static Parser<LocalDateTime> createAbsoluteDateTimeParser(LanguageKeywords keywords, Clock clock) {
-        return Parsers.longest(DATE_TIME, createDateOnlyParser(keywords, clock));
+    private static Parser<DateValue> createAbsoluteDateTimeParser(LanguageKeywords keywords, Clock clock) {
+        return Parsers.longest(
+                DATE_TIME.map(DateValue.AbsoluteDate::new),
+                createDateOnlyParser(keywords, clock)
+        );
     }
 
     private static final Parser<LocalDate> DATE = Patterns.regex("\\d{4}-\\d{2}-\\d{2}")
@@ -322,7 +407,7 @@ public class DateValueParser {
 
     private static final Parser<LocalDateTime> DATE_ONLY = DATE.map(LocalDate::atStartOfDay);
 
-    public Parser<LocalDateTime> absoluteDateTimeParser() {
+    public Parser<DateValue> absoluteDateTimeParser() {
         return absoluteDateTimeParser;
     }
 

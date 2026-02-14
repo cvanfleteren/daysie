@@ -20,15 +20,15 @@ class DateValueParserTest {
     class SingleParserTests {
         @ParameterizedTest(name = "parse \"{0}\" returns {1}")
         @CsvSource({
-                "2026-02-03, 2026-02-03T00:00:00",
-                "2026-02-03 12:34:56, 2026-02-03T12:34:56",
-                "2026-02-03T12:34:56, 2026-02-03T12:34:56",
-                "2026-02-03t12:34:56, 2026-02-03T12:34:56",
-                "2026-02-03   12:34:56, 2026-02-03T12:34:56"
+                "2026-02-03, '[2026-02-03T00:00,2026-02-04T00:00)'",
+                "2026-02-03 12:34:56, '[2026-02-03T12:34:56,2026-02-03T12:34:56]'",
+                "2026-02-03T12:34:56, '[2026-02-03T12:34:56,2026-02-03T12:34:56]'",
+                "2026-02-03t12:34:56, '[2026-02-03T12:34:56,2026-02-03T12:34:56]'",
+                "2026-02-03   12:34:56, '[2026-02-03T12:34:56,2026-02-03T12:34:56]'"
         })
-        void parse_input_returnsDateTime(String input, String expected) {
-            LocalDateTime result = new DateValueParser().absoluteDateTimeParser().parse(input);
-            assertThat(result).isEqualTo(LocalDateTime.parse(expected));
+        void parse_input_returnsExpectedToString(String input, String expected) {
+            DateValue result = new DateValueParser().absoluteDateTimeParser().parse(input);
+            assertThat(result.toString()).isEqualTo(expected);
         }
     }
 
@@ -36,13 +36,13 @@ class DateValueParserTest {
     class DateValueParserTests {
         @ParameterizedTest(name = "parse \"{0}\" returns {1}")
         @CsvSource({
-                "'2026-02-03',              '[2026-02-03T00:00,2026-02-03T00:00]'",
+                "'2026-02-03',              '[2026-02-03T00:00,2026-02-04T00:00)'",
                 "'2026-02-03 12:34:56',     '[2026-02-03T12:34:56,2026-02-03T12:34:56]'",
 
                 "'< 2026-02-01',           '(-∞,2026-02-01T00:00)'",
                 "'before 2026-01-01',      '(-∞,2026-01-01T00:00)'",
-                "'until 2026-01-01',       '(-∞,2026-01-01T00:00]'",
-                "'<= 2026-02-01',          '(-∞,2026-02-01T00:00]'",
+                "'until 2026-01-01',       '(-∞,2026-01-02T00:00)'",
+                "'<= 2026-02-01',          '(-∞,2026-02-02T00:00)'",
                 "'<= 2026-02-03 12:34:56', '(-∞,2026-02-03T12:34:56]'",
 
                 "'> 2026-02-01',           '[2026-02-02T00:00, ∞)'",
@@ -55,8 +55,8 @@ class DateValueParserTest {
                 "'BEFORE 2026-01-01',      '(-∞,2026-01-01T00:00)'",
                 "'SiNcE 2026-01-01',       '[2026-01-01T00:00, ∞)'",
 
-                "'2026-01-01 to 2026-02-01', '[2026-01-01T00:00,2026-02-01T00:00]'",
-                "'2026-01-01 - 2026-02-01',  '[2026-01-01T00:00,2026-02-01T00:00]'",
+                "'2026-01-01 to 2026-02-01', '[2026-01-01T00:00,2026-02-02T00:00)'",
+                "'2026-01-01 - 2026-02-01',  '[2026-01-01T00:00,2026-02-02T00:00)'",
         })
         void parse_input_returnsExpectedToString(String input, String expectedToString) {
             DateValue result = DateValueParser.DATE_VALUE_PARSER.parse(input);
@@ -68,19 +68,19 @@ class DateValueParserTest {
     class RelativeDateTests {
         @ParameterizedTest(name = "parse fixed relative \"{0}\" returns {1}")
         @CsvSource({
-                "today,                  '[2026-02-14T00:00,2026-02-14T00:00]'",
-                "yesterday,              '[2026-02-13T00:00,2026-02-13T00:00]'",
-                "tomorrow,               '[2026-02-15T00:00,2026-02-15T00:00]'",
-                "vandaag,                '[2026-02-14T00:00,2026-02-14T00:00]'",
-                "gisteren,               '[2026-02-13T00:00,2026-02-13T00:00]'",
-                "morgen,                 '[2026-02-15T00:00,2026-02-15T00:00]'",
-                "monday,                 '[2026-02-09T00:00,2026-02-09T00:00]'",
-                "saturday,               '[2026-02-14T00:00,2026-02-14T00:00]'",
-                "zaterdag,               '[2026-02-14T00:00,2026-02-14T00:00]'",
-                "sunday,                 '[2026-02-08T00:00,2026-02-08T00:00]'",
-                "TODAY,                  '[2026-02-14T00:00,2026-02-14T00:00]'",
-                "Yesterday,              '[2026-02-13T00:00,2026-02-13T00:00]'",
-                "MONDAY,                 '[2026-02-09T00:00,2026-02-09T00:00]'",
+                "today,                  '[2026-02-14T00:00,2026-02-15T00:00)'",
+                "yesterday,              '[2026-02-13T00:00,2026-02-14T00:00)'",
+                "tomorrow,               '[2026-02-15T00:00,2026-02-16T00:00)'",
+                "vandaag,                '[2026-02-14T00:00,2026-02-15T00:00)'",
+                "gisteren,               '[2026-02-13T00:00,2026-02-14T00:00)'",
+                "morgen,                 '[2026-02-15T00:00,2026-02-16T00:00)'",
+                "monday,                 '[2026-02-09T00:00,2026-02-10T00:00)'",
+                "saturday,               '[2026-02-14T00:00,2026-02-15T00:00)'",
+                "zaterdag,               '[2026-02-14T00:00,2026-02-15T00:00)'",
+                "sunday,                 '[2026-02-08T00:00,2026-02-09T00:00)'",
+                "TODAY,                  '[2026-02-14T00:00,2026-02-15T00:00)'",
+                "Yesterday,              '[2026-02-13T00:00,2026-02-14T00:00)'",
+                "MONDAY,                 '[2026-02-09T00:00,2026-02-10T00:00)'",
         })
         void parse_fixedRelativeInput_returnsExpectedToString(String input, String expectedToString) {
             parseAndAssert(input, expectedToString);
@@ -156,11 +156,11 @@ class DateValueParserTest {
                 "before yesterday,       '(-∞,2026-02-13T00:00)'",
                 "after today,            '[2026-02-15T00:00, ∞)'",
                 "since yesterday,        '[2026-02-13T00:00, ∞)'",
-                "until tomorrow,         '(-∞,2026-02-15T00:00]'",
+                "until tomorrow,         '(-∞,2026-02-16T00:00)'",
                 "since saturday,         '[2026-02-14T00:00, ∞)'",
                 "after friday,           '[2026-02-14T00:00, ∞)'",
-                "gisteren ToT vandaag,   '[2026-02-13T00:00,2026-02-14T00:00]'",
-                "sunday to yesterday,    '[2026-02-08T00:00,2026-02-13T00:00]'"
+                "gisteren ToT vandaag,   '[2026-02-13T00:00,2026-02-15T00:00)'",
+                "sunday to yesterday,    '[2026-02-08T00:00,2026-02-14T00:00)'"
         })
         void parse_relativeInputWithOperator_returnsExpectedToString(String input, String expectedToString) {
             LanguageKeywords combined = LanguageKeywords.combine(List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));
@@ -178,9 +178,9 @@ class DateValueParserTest {
                 "'sinds 2026-01-01',            '[2026-01-01T00:00, ∞)'",
                 "'voor 2026-01-01',             '(-∞,2026-01-01T00:00)'",
                 "'tot 2026-01-01',              '(-∞,2026-01-01T00:00)'",
-                "'tot en met 2026-01-01',       '(-∞,2026-01-01T00:00]'",
-                "'2026-01-01 tot 2026-02-01',   '[2026-01-01T00:00,2026-02-01T00:00]'",
-                "'2026-01-01 t/m 2026-02-01',   '[2026-01-01T00:00,2026-02-01T00:00]'",
+                "'tot en met 2026-01-01',       '(-∞,2026-01-02T00:00)'",
+                "'2026-01-01 tot 2026-02-01',   '[2026-01-01T00:00,2026-02-02T00:00)'",
+                "'2026-01-01 t/m 2026-02-01',   '[2026-01-01T00:00,2026-02-02T00:00)'",
         })
         void parse_dutchInput_returnsExpectedToString(String input, String expectedToString) {
             DateValueParser dutchParser = new DateValueParser(LanguageKeywords.DUTCH);
