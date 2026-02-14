@@ -383,9 +383,15 @@ public class DateValueParser {
     }
 
     private static Parser<DateValue> createAbsoluteDateTimeParser(LanguageKeywords keywords, Clock clock) {
+        Parser<DateValue> timeOnly = TIME.map(time -> {
+            LocalDate today = LocalDate.now(clock);
+            return new DateValue.AbsoluteDate(LocalDateTime.of(today, time));
+        });
+
         return Parsers.longest(
                 DATE_TIME.map(DateValue.AbsoluteDate::new),
-                createDateOnlyParser(keywords, clock)
+                createDateOnlyParser(keywords, clock),
+                timeOnly
         );
     }
 
@@ -394,10 +400,16 @@ public class DateValueParser {
             .source()
             .map(LocalDate::parse);
 
-    private static final Parser<LocalTime> TIME = Patterns.regex("\\d{2}:\\d{2}:\\d{2}")
-            .toScanner("time")
-            .source()
-            .map(LocalTime::parse);
+    private static final Parser<LocalTime> TIME = Parsers.or(
+            Patterns.regex("\\d{2}:\\d{2}:\\d{2}")
+                    .toScanner("time-with-seconds")
+                    .source()
+                    .map(LocalTime::parse),
+            Patterns.regex("\\d{2}:\\d{2}")
+                    .toScanner("time-without-seconds")
+                    .source()
+                    .map(s -> LocalTime.parse(s + ":00"))
+    );
 
     private static final Parser<LocalDateTime> DATE_TIME = Parsers.sequence(
             DATE,

@@ -6,7 +6,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -51,6 +50,8 @@ class DateValueParserTest {
                 "'>= 2026-02-01',          '[2026-02-01T00:00, ∞)'",
                 "'>= 2026-02-03 12:34:56', '[2026-02-03T12:34:56, ∞)'",
                 "'after 2026-01-01 12:00:00', '(2026-01-01T12:00, ∞)'",
+                "'since 08:00',            '[2026-02-14T08:00, ∞)'",
+                "'after 12:34:56',         '(2026-02-14T12:34:56, ∞)'",
 
                 "'BEFORE 2026-01-01',      '(-∞,2026-01-01T00:00)'",
                 "'SiNcE 2026-01-01',       '[2026-01-01T00:00, ∞)'",
@@ -62,7 +63,8 @@ class DateValueParserTest {
                 "'after 2026-02',            '[2026-03-01T00:00, ∞)'",
         })
         void parse_input_returnsExpectedToString(String input, String expectedToString) {
-            DateValue result = DateValueParser.DATE_VALUE_PARSER.parse(input);
+            LanguageKeywords combined = LanguageKeywords.combine(List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));
+            DateValue result = new DateValueParser(combined, FIXED_CLOCK).parser().parse(input);
             assertThat(result.toString()).isEqualTo(expectedToString);
         }
     }
