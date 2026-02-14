@@ -10,8 +10,10 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Comparator;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -66,28 +68,88 @@ public class DateValueParser {
                 (from, s1, op, s2, until) -> new DateValue.AbsoluteRange(from, until, true, containsIgnoreCase(keywords.rangeConnectorsInclusive(), op))
         );
 
-        Parser<DateValue> lastWeekParser = toScanner(keywords.lastWeek()).map(ignored -> {
-            LocalDate today = LocalDate.now(clock);
-            LocalDate startOfLastWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(1);
-            LocalDate endOfLastWeek = startOfLastWeek.plusDays(6);
-            return new DateValue.AbsoluteRange(startOfLastWeek.atStartOfDay(), endOfLastWeek.atStartOfDay(), true, true);
-        });
+        Parser<Integer> numberParser = Scanners.INTEGER.map(Integer::parseInt);
 
-        Parser<DateValue> lastMonthParser = toScanner(keywords.lastMonth()).map(ignored -> {
-            LocalDate today = LocalDate.now(clock);
-            LocalDate firstDayOfLastMonth = today.minusMonths(1).with(TemporalAdjusters.firstDayOfMonth());
-            LocalDate lastDayOfLastMonth = firstDayOfLastMonth.with(TemporalAdjusters.lastDayOfMonth());
-            return new DateValue.AbsoluteRange(firstDayOfLastMonth.atStartOfDay(), lastDayOfLastMonth.atStartOfDay(), true, true);
-        });
+        Parser<ChronoUnit> chronoUnitParser = Parsers.or(
+                keywords.chronoUnits().entrySet().stream()
+                        .sorted((e1, e2) -> e2.getKey().length() - e1.getKey().length())
+                        .map(entry -> Scanners.stringCaseInsensitive(entry.getKey()).map(ignored -> entry.getValue()))
+                        .toList()
+        );
+
+        Parser<DateValue> generalizedLastParser = Parsers.sequence(
+                toScanner(keywords.last()),
+                Scanners.WHITESPACES.atLeast(1),
+                numberParser.optional(1),
+                Scanners.WHITESPACES.many(),
+                chronoUnitParser
+        ).source().map(input -> calculateLastRangeFromInput(input, clock, keywords));
 
         this.dateValueParser = Parsers.or(
                 absoluteRange,
-                lastWeekParser,
-                lastMonthParser,
+                generalizedLastParser,
                 untilAbsoluteDate,
                 fromAbsoluteDate,
                 absoluteDateTimeParser.map(DateValue.AbsoluteDate::new)
         );
+    }
+
+    private DateValue calculateLastRangeFromInput(String input, Clock clock, LanguageKeywords keywords) {
+        String lowerInput = input.toLowerCase();
+        int amount = 1;
+        // Try to find a number
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\d+").matcher(lowerInput);
+        if (matcher.find()) {
+            amount = Integer.parseInt(matcher.group());
+        }
+
+        ChronoUnit unit = null;
+        String matchedUnitKey = "";
+        for (Map.Entry<String, ChronoUnit> entry : keywords.chronoUnits().entrySet()) {
+            String key = entry.getKey().toLowerCase();
+            if (lowerInput.contains(key)) {
+                if (key.length() > matchedUnitKey.length()) {
+                    unit = entry.getValue();
+                    matchedUnitKey = key;
+                }
+            }
+        }
+
+        LocalDate today = LocalDate.now(clock);
+        if (unit == ChronoUnit.DAYS) {
+            LocalDate start = today.minusDays(amount);
+            LocalDate end = today.minusDays(1);
+            return new DateValue.AbsoluteRange(start.atStartOfDay(), end.atStartOfDay(), true, true);
+        } else if (unit == ChronoUnit.WEEKS) {
+            LocalDate startOfThisWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            LocalDate start = startOfThisWeek.minusWeeks(amount);
+            LocalDate end = startOfThisWeek.minusDays(1);
+            return new DateValue.AbsoluteRange(start.atStartOfDay(), end.atStartOfDay(), true, true);
+        } else if (unit == ChronoUnit.MONTHS) {
+            if (matchedUnitKey.equalsIgnoreCase("quarter") || matchedUnitKey.equalsIgnoreCase("quarters")
+                || matchedUnitKey.equalsIgnoreCase("kwartaal") || matchedUnitKey.equalsIgnoreCase("kwartalen")) {
+                // Quarter logic: last X quarters
+                // Current quarter start:
+                int currentMonth = today.getMonthValue();
+                int startMonthOfCurrentQuarter = ((currentMonth - 1) / 3) * 3 + 1;
+                LocalDate startOfThisQuarter = today.withMonth(startMonthOfCurrentQuarter).withDayOfMonth(1);
+                LocalDate start = startOfThisQuarter.minusMonths(amount * 3L);
+                LocalDate end = startOfThisQuarter.minusDays(1);
+                return new DateValue.AbsoluteRange(start.atStartOfDay(), end.atStartOfDay(), true, true);
+            } else {
+                LocalDate startOfThisMonth = today.with(TemporalAdjusters.firstDayOfMonth());
+                LocalDate start = startOfThisMonth.minusMonths(amount);
+                LocalDate end = startOfThisMonth.minusDays(1);
+                return new DateValue.AbsoluteRange(start.atStartOfDay(), end.atStartOfDay(), true, true);
+            }
+        } else if (unit == ChronoUnit.YEARS) {
+            LocalDate startOfThisYear = today.with(TemporalAdjusters.firstDayOfYear());
+            LocalDate start = startOfThisYear.minusYears(amount);
+            LocalDate end = startOfThisYear.minusDays(1);
+            return new DateValue.AbsoluteRange(start.atStartOfDay(), end.atStartOfDay(), true, true);
+        }
+
+        return null; // Should not happen
     }
 
     private static boolean containsIgnoreCase(Set<String> set, String value) {

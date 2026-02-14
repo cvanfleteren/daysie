@@ -82,6 +82,12 @@ class DateValueParserTest {
                 "vorige week,            '[2026-02-02T00:00,2026-02-08T00:00]'",
                 "last month,             '[2026-01-01T00:00,2026-01-31T00:00]'",
                 "vorige maand,           '[2026-01-01T00:00,2026-01-31T00:00]'",
+                "last year,              '[2025-01-01T00:00,2025-12-31T00:00]'",
+                "last quarter,           '[2025-10-01T00:00,2025-12-31T00:00]'",
+                "last 2 months,          '[2025-12-01T00:00,2026-01-31T00:00]'",
+                "previous 2 months,      '[2025-12-01T00:00,2026-01-31T00:00]'",
+                "last 3 days,            '[2026-02-11T00:00,2026-02-13T00:00]'",
+                "vorige 2 kwartalen,     '[2025-07-01T00:00,2025-12-31T00:00]'",
                 "TODAY,                  '[2026-02-14T00:00,2026-02-14T00:00]'",
                 "Yesterday,              '[2026-02-13T00:00,2026-02-13T00:00]'",
                 "MONDAY,                 '[2026-02-09T00:00,2026-02-09T00:00]'",
@@ -102,7 +108,7 @@ class DateValueParserTest {
                 "until tomorrow,         '(-∞,2026-02-15T00:00]'",
                 "since saturday,         '[2026-02-14T00:00, ∞)'",
                 "after friday,           '(2026-02-13T00:00, ∞)'",
-                "gisteren tot vandaag,   '[2026-02-13T00:00,2026-02-14T00:00]'",
+                "gisteren ToT vandaag,   '[2026-02-13T00:00,2026-02-14T00:00]'",
                 "sunday to yesterday,    '[2026-02-08T00:00,2026-02-13T00:00]'"
         })
         void parse_relativeInputWithOperator_returnsExpectedToString(String input, String expectedToString) {
