@@ -88,26 +88,26 @@ class DateValueParserTest {
 
         @ParameterizedTest(name = "parse past relative \"{0}\" returns {1}")
         @CsvSource({
-                "last week,              '[2026-02-02T00:00,2026-02-08T00:00]'",
-                "vorige week,            '[2026-02-02T00:00,2026-02-08T00:00]'",
-                "Vorige Week,            '[2026-02-02T00:00,2026-02-08T00:00]'",
-                "afgelopen week,         '[2026-02-02T00:00,2026-02-08T00:00]'",
-                "last month,             '[2026-01-01T00:00,2026-01-31T00:00]'",
-                "last 1 month,           '[2026-01-01T00:00,2026-01-31T00:00]'",
-                "vorige maand,           '[2026-01-01T00:00,2026-01-31T00:00]'",
-                "last year,              '[2025-01-01T00:00,2025-12-31T00:00]'",
-                "last quarter,           '[2025-10-01T00:00,2025-12-31T00:00]'",
-                "last 2 months,          '[2025-12-01T00:00,2026-01-31T00:00]'",
-                "previous 2 months,      '[2025-12-01T00:00,2026-01-31T00:00]'",
-                "vorige 2 kwartalen,     '[2025-07-01T00:00,2025-12-31T00:00]'",
-                "last hour,              '[2026-02-14T09:00,2026-02-14T10:00]'",
-                "last 2 hours,           '[2026-02-14T08:00,2026-02-14T10:00]'",
-                "afgelopen 1 uur,        '[2026-02-14T09:00,2026-02-14T10:00]'",
-                "past day,               '[2026-02-13T00:00,2026-02-14T10:00]'",
-                "last 3 days,            '[2026-02-11T00:00,2026-02-14T10:00]'",
-                "past 3 days,            '[2026-02-11T00:00,2026-02-14T10:00]'",
-                "last 5 minutes,         '[2026-02-14T09:55,2026-02-14T10:00]'",
-                "afgelopen 10 minuten,   '[2026-02-14T09:50,2026-02-14T10:00]'",
+                "last week,              '[2026-02-02T00:00,2026-02-09T00:00)'",
+                "vorige week,            '[2026-02-02T00:00,2026-02-09T00:00)'",
+                "Vorige Week,            '[2026-02-02T00:00,2026-02-09T00:00)'",
+                "afgelopen week,         '[2026-02-02T00:00,2026-02-09T00:00)'",
+                "last month,             '[2026-01-01T00:00,2026-02-01T00:00)'",
+                "last 1 month,           '[2026-01-01T00:00,2026-02-01T00:00)'",
+                "vorige maand,           '[2026-01-01T00:00,2026-02-01T00:00)'",
+                "last year,              '[2025-01-01T00:00,2026-01-01T00:00)'",
+                "last quarter,           '[2025-10-01T00:00,2026-01-01T00:00)'",
+                "last 2 months,          '[2025-12-01T00:00,2026-02-01T00:00)'",
+                "previous 2 months,      '[2025-12-01T00:00,2026-02-01T00:00)'",
+                "vorige 2 kwartalen,     '[2025-07-01T00:00,2026-01-01T00:00)'",
+                "last hour,              '[2026-02-14T09:00,2026-02-14T10:00)'",
+                "last 2 hours,           '[2026-02-14T08:00,2026-02-14T10:00)'",
+                "afgelopen 1 uur,        '[2026-02-14T09:00,2026-02-14T10:00)'",
+                "past day,               '[2026-02-13T00:00,2026-02-14T10:00)'",
+                "last 3 days,            '[2026-02-11T00:00,2026-02-14T10:00)'",
+                "past 3 days,            '[2026-02-11T00:00,2026-02-14T10:00)'",
+                "last 5 minutes,         '[2026-02-14T09:55,2026-02-14T10:00)'",
+                "afgelopen 10 minuten,   '[2026-02-14T09:50,2026-02-14T10:00)'",
         })
         void parse_pastRelativeInput_returnsExpectedToString(String input, String expectedToString) {
             parseAndAssert(input, expectedToString);
@@ -115,17 +115,32 @@ class DateValueParserTest {
 
         @ParameterizedTest(name = "parse future relative \"{0}\" returns {1}")
         @CsvSource({
-                "next hour,              '[2026-02-14T10:00,2026-02-14T11:00]'",
-                "next 2 hours,           '[2026-02-14T10:00,2026-02-14T12:00]'",
-                "next 2 days,            '[2026-02-14T10:00,2026-02-16T23:59:59.999999999]'",
-                "next 15 minutes,        '[2026-02-14T10:00,2026-02-14T10:15]'",
-                "volgende 5 minuten,     '[2026-02-14T10:00,2026-02-14T10:05]'",
-                "volgende week,          '[2026-02-16T00:00,2026-02-22T00:00]'",
-                "next month,             '[2026-03-01T00:00,2026-03-31T00:00]'",
-                "next year,              '[2027-01-01T00:00,2027-12-31T00:00]'",
-                "volgende 2 kwartalen,   '[2026-04-01T00:00,2026-09-30T00:00]'",
+                "next hour,              '[2026-02-14T10:00,2026-02-14T11:00)'",
+                "next 2 hours,           '[2026-02-14T10:00,2026-02-14T12:00)'",
+                "next 20 hours,          '[2026-02-14T10:00,2026-02-15T06:00)'",
+                "next 2 days,            '[2026-02-14T10:00,2026-02-17T00:00)'",
+                "next 15 minutes,        '[2026-02-14T10:00,2026-02-14T10:15)'",
+                "volgende 5 minutes,     '[2026-02-14T10:00,2026-02-14T10:05)'",
+                "volgende week,          '[2026-02-16T00:00,2026-02-23T00:00)'",
+                "next month,             '[2026-03-01T00:00,2026-04-01T00:00)'",
+                "next year,              '[2027-01-01T00:00,2028-01-01T00:00)'",
+                "volgende 2 kwartalen,   '[2026-04-01T00:00,2026-10-01T00:00)'",
         })
         void parse_futureRelativeInput_returnsExpectedToString(String input, String expectedToString) {
+            parseAndAssert(input, expectedToString);
+        }
+
+        @ParameterizedTest(name = "parse current relative \"{0}\" returns {1}")
+        @CsvSource({
+                "this hour,               '[2026-02-14T10:00,2026-02-14T11:00)'",
+                "this day,                '[2026-02-14T00:00,2026-02-15T00:00)'",
+                "this week,               '[2026-02-09T00:00,2026-02-16T00:00)'",
+                "this month,              '[2026-02-01T00:00,2026-03-01T00:00)'",
+                "deze week,               '[2026-02-09T00:00,2026-02-16T00:00)'",
+                "dit jaar,                '[2026-01-01T00:00,2027-01-01T00:00)'",
+                "this 2 months,           '[2026-01-01T00:00,2026-03-01T00:00)'",
+        })
+        void parse_thisRelativeInput_returnsExpectedToString(String input, String expectedToString) {
             parseAndAssert(input, expectedToString);
         }
 

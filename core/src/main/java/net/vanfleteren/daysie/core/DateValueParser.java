@@ -93,7 +93,7 @@ public class DateValueParser {
                 numberParser.optional(1),
                 Scanners.WHITESPACES.many(),
                 chronoUnitParser
-        ).source().map(input -> calculateRelativeRangeFromInput(input, clock, keywords, true));
+        ).source().map(input -> calculateRelativeRangeFromInput(input, clock, keywords, RelativeDirection.LAST));
 
         Parser<DateValue> generalizedNextParser = Parsers.sequence(
                 toScanner(keywords.next()),
@@ -101,19 +101,30 @@ public class DateValueParser {
                 numberParser.optional(1),
                 Scanners.WHITESPACES.many(),
                 chronoUnitParser
-        ).source().map(input -> calculateRelativeRangeFromInput(input, clock, keywords, false));
+        ).source().map(input -> calculateRelativeRangeFromInput(input, clock, keywords, RelativeDirection.NEXT));
+
+        Parser<DateValue> generalizedThisParser = Parsers.sequence(
+                toScanner(keywords.current()),
+                Scanners.WHITESPACES.atLeast(1),
+                numberParser.optional(1),
+                Scanners.WHITESPACES.many(),
+                chronoUnitParser
+        ).source().map(input -> calculateRelativeRangeFromInput(input, clock, keywords, RelativeDirection.THIS));
 
         this.dateValueParser = Parsers.or(
                 absoluteRange,
                 generalizedLastParser,
                 generalizedNextParser,
+                generalizedThisParser,
                 untilAbsoluteDate,
                 fromAbsoluteDate,
                 absoluteDateTimeParser.map(DateValue.AbsoluteDate::new)
         );
     }
 
-    private DateValue calculateRelativeRangeFromInput(String input, Clock clock, LanguageKeywords keywords, boolean isPast) {
+    private enum RelativeDirection { LAST, NEXT, THIS }
+
+    private DateValue calculateRelativeRangeFromInput(String input, Clock clock, LanguageKeywords keywords, RelativeDirection direction) {
         String lowerInput = input.toLowerCase();
         int amount = 1;
         // Try to find a number
@@ -137,80 +148,123 @@ public class DateValueParser {
         LocalDate today = LocalDate.now(clock);
         LocalDateTime now = LocalDateTime.now(clock);
 
-        if (isPast) {
-            return calculateLastRange(today, now, unit, amount, matchedUnitKey);
-        } else {
-            return calculateNextRange(today, now, unit, amount, matchedUnitKey);
-        }
+        return switch (direction) {
+            case LAST -> calculateLastRange(today, now, unit, amount, matchedUnitKey);
+            case NEXT -> calculateNextRange(today, now, unit, amount, matchedUnitKey);
+            case THIS -> calculateThisRange(today, now, unit, amount, matchedUnitKey);
+        };
     }
 
     private DateValue calculateLastRange(LocalDate today, LocalDateTime now, ChronoUnit unit, int amount, String matchedUnitKey) {
-        if (unit == ChronoUnit.MINUTES) {
-            LocalDateTime start = now.minusMinutes(amount);
-            return new DateValue.AbsoluteRange(start, now, true, true);
-        } else if (unit == ChronoUnit.HOURS) {
-            LocalDateTime start = now.minusHours(amount);
-            return new DateValue.AbsoluteRange(start, now, true, true);
-        } else if (unit == ChronoUnit.DAYS) {
-            LocalDate start = today.minusDays(amount);
-            return new DateValue.AbsoluteRange(start.atStartOfDay(), now, true, true);
-        } else if (unit == ChronoUnit.WEEKS) {
-            LocalDate startOfThisWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            LocalDate start = startOfThisWeek.minusWeeks(amount);
-            LocalDate end = startOfThisWeek.minusDays(1);
-            return new DateValue.AbsoluteRange(start.atStartOfDay(), end.atStartOfDay(), true, true);
-        } else if (unit == ChronoUnit.MONTHS) {
-            if (isQuarter(matchedUnitKey)) {
-                LocalDate startOfThisQuarter = getStartOfQuarter(today);
-                LocalDate start = startOfThisQuarter.minusMonths(amount * 3L);
-                LocalDate end = startOfThisQuarter.minusDays(1);
-                return new DateValue.AbsoluteRange(start.atStartOfDay(), end.atStartOfDay(), true, true);
-            } else {
-                LocalDate startOfThisMonth = today.with(TemporalAdjusters.firstDayOfMonth());
-                LocalDate start = startOfThisMonth.minusMonths(amount);
-                LocalDate end = startOfThisMonth.minusDays(1);
-                return new DateValue.AbsoluteRange(start.atStartOfDay(), end.atStartOfDay(), true, true);
+        return switch (unit) {
+            case MINUTES -> {
+                LocalDateTime start = now.minusMinutes(amount);
+                yield new DateValue.AbsoluteRange(start, now, true, false);
             }
-        } else if (unit == ChronoUnit.YEARS) {
-            LocalDate startOfThisYear = today.with(TemporalAdjusters.firstDayOfYear());
-            LocalDate start = startOfThisYear.minusYears(amount);
-            LocalDate end = startOfThisYear.minusDays(1);
-            return new DateValue.AbsoluteRange(start.atStartOfDay(), end.atStartOfDay(), true, true);
-        }
-        return null;
+            case HOURS -> {
+                LocalDateTime start = now.minusHours(amount);
+                yield new DateValue.AbsoluteRange(start, now, true, false);
+            }
+            case DAYS -> {
+                LocalDate start = today.minusDays(amount);
+                yield new DateValue.AbsoluteRange(start.atStartOfDay(), now, true, false);
+            }
+            case WEEKS -> {
+                LocalDate startOfThisWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                LocalDate start = startOfThisWeek.minusWeeks(amount);
+                yield new DateValue.AbsoluteRange(start.atStartOfDay(), startOfThisWeek.atStartOfDay(), true, false);
+            }
+            case MONTHS -> {
+                if (isQuarter(matchedUnitKey)) {
+                    LocalDate startOfThisQuarter = getStartOfQuarter(today);
+                    LocalDate start = startOfThisQuarter.minusMonths(amount * 3L);
+                    yield new DateValue.AbsoluteRange(start.atStartOfDay(), startOfThisQuarter.atStartOfDay(), true, false);
+                } else {
+                    LocalDate startOfThisMonth = today.with(TemporalAdjusters.firstDayOfMonth());
+                    LocalDate start = startOfThisMonth.minusMonths(amount);
+                    yield new DateValue.AbsoluteRange(start.atStartOfDay(), startOfThisMonth.atStartOfDay(), true, false);
+                }
+            }
+            case YEARS -> {
+                LocalDate startOfThisYear = today.with(TemporalAdjusters.firstDayOfYear());
+                LocalDate start = startOfThisYear.minusYears(amount);
+                yield new DateValue.AbsoluteRange(start.atStartOfDay(), startOfThisYear.atStartOfDay(), true, false);
+            }
+            default -> null;
+        };
+    }
+
+    private DateValue calculateThisRange(LocalDate today, LocalDateTime now, ChronoUnit unit, int amount, String matchedUnitKey) {
+        return switch (unit) {
+            case MINUTES -> {
+                LocalDateTime start = now.minusMinutes(amount - 1L).withNano(0).withSecond(0);
+                yield new DateValue.AbsoluteRange(start, start.plusMinutes(1), true, false);
+            }
+            case HOURS -> {
+                LocalDateTime start = now.minusHours(amount - 1L).withNano(0).withSecond(0).withMinute(0);
+                yield new DateValue.AbsoluteRange(start, start.plusHours(1), true, false);
+            }
+            case DAYS -> {
+                LocalDate start = today.minusDays(amount - 1L);
+                yield new DateValue.AbsoluteRange(start.atStartOfDay(), today.plusDays(1).atStartOfDay(), true, false);
+            }
+            case WEEKS -> {
+                LocalDate startOfThisWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                LocalDate start = startOfThisWeek.minusWeeks(amount - 1L);
+                yield new DateValue.AbsoluteRange(start.atStartOfDay(), startOfThisWeek.plusWeeks(1).atStartOfDay(), true, false);
+            }
+            case MONTHS -> {
+                if (isQuarter(matchedUnitKey)) {
+                    LocalDate startOfThisQuarter = getStartOfQuarter(today);
+                    LocalDate start = startOfThisQuarter.minusMonths((amount - 1L) * 3);
+                    yield new DateValue.AbsoluteRange(start.atStartOfDay(), startOfThisQuarter.plusMonths(3).atStartOfDay(), true, false);
+                } else {
+                    LocalDate startOfThisMonth = today.with(TemporalAdjusters.firstDayOfMonth());
+                    LocalDate start = startOfThisMonth.minusMonths(amount - 1L);
+                    yield new DateValue.AbsoluteRange(start.atStartOfDay(), startOfThisMonth.plusMonths(1).atStartOfDay(), true, false);
+                }
+            }
+            case YEARS -> {
+                LocalDate startOfThisYear = today.with(TemporalAdjusters.firstDayOfYear());
+                LocalDate start = startOfThisYear.minusYears(amount - 1L);
+                yield new DateValue.AbsoluteRange(start.atStartOfDay(), startOfThisYear.plusYears(1).atStartOfDay(), true, false);
+            }
+            default -> null;
+        };
     }
 
     private DateValue calculateNextRange(LocalDate today, LocalDateTime now, ChronoUnit unit, int amount, String matchedUnitKey) {
-        if (unit == ChronoUnit.MINUTES) {
-            LocalDateTime end = now.plusMinutes(amount);
-            return new DateValue.AbsoluteRange(now, end, true, true);
-        } else if (unit == ChronoUnit.HOURS) {
-            LocalDateTime end = now.plusHours(amount);
-            return new DateValue.AbsoluteRange(now, end, true, true);
-        } else if (unit == ChronoUnit.DAYS) {
-            LocalDate end = today.plusDays(amount);
-            return new DateValue.AbsoluteRange(now, end.atTime(LocalTime.MAX), true, true);
-        } else if (unit == ChronoUnit.WEEKS) {
-            LocalDate startOfNextWeek = today.with(TemporalAdjusters.next(DayOfWeek.MONDAY));
-            LocalDate start = startOfNextWeek;
-            LocalDate end = startOfNextWeek.plusWeeks(amount).minusDays(1);
-            return new DateValue.AbsoluteRange(start.atStartOfDay(), end.atStartOfDay(), true, true);
-        } else if (unit == ChronoUnit.MONTHS) {
-            if (isQuarter(matchedUnitKey)) {
-                LocalDate startOfNextQuarter = getStartOfQuarter(today).plusMonths(3);
-                LocalDate end = startOfNextQuarter.plusMonths(amount * 3L).minusDays(1);
-                return new DateValue.AbsoluteRange(startOfNextQuarter.atStartOfDay(), end.atStartOfDay(), true, true);
-            } else {
-                LocalDate startOfNextMonth = today.with(TemporalAdjusters.firstDayOfMonth()).plusMonths(1);
-                LocalDate end = startOfNextMonth.plusMonths(amount).minusDays(1);
-                return new DateValue.AbsoluteRange(startOfNextMonth.atStartOfDay(), end.atStartOfDay(), true, true);
+        return switch (unit) {
+            case MINUTES -> {
+                LocalDateTime end = now.plusMinutes(amount);
+                yield new DateValue.AbsoluteRange(now, end, true, false);
             }
-        } else if (unit == ChronoUnit.YEARS) {
-            LocalDate startOfNextYear = today.with(TemporalAdjusters.firstDayOfYear()).plusYears(1);
-            LocalDate end = startOfNextYear.plusYears(amount).minusDays(1);
-            return new DateValue.AbsoluteRange(startOfNextYear.atStartOfDay(), end.atStartOfDay(), true, true);
-        }
-        return null;
+            case HOURS -> {
+                LocalDateTime end = now.plusHours(amount);
+                yield new DateValue.AbsoluteRange(now, end, true, false);
+            }
+            case DAYS -> {
+                yield new DateValue.AbsoluteRange(now, today.plusDays(amount + 1L).atStartOfDay(), true, false);
+            }
+            case WEEKS -> {
+                LocalDate startOfNextWeek = today.with(TemporalAdjusters.next(DayOfWeek.MONDAY));
+                yield new DateValue.AbsoluteRange(startOfNextWeek.atStartOfDay(), startOfNextWeek.plusWeeks(amount).atStartOfDay(), true, false);
+            }
+            case MONTHS -> {
+                if (isQuarter(matchedUnitKey)) {
+                    LocalDate startOfNextQuarter = getStartOfQuarter(today).plusMonths(3);
+                    yield new DateValue.AbsoluteRange(startOfNextQuarter.atStartOfDay(), startOfNextQuarter.plusMonths(amount * 3L).atStartOfDay(), true, false);
+                } else {
+                    LocalDate startOfNextMonth = today.with(TemporalAdjusters.firstDayOfMonth()).plusMonths(1);
+                    yield new DateValue.AbsoluteRange(startOfNextMonth.atStartOfDay(), startOfNextMonth.plusMonths(amount).atStartOfDay(), true, false);
+                }
+            }
+            case YEARS -> {
+                LocalDate startOfNextYear = today.with(TemporalAdjusters.firstDayOfYear()).plusYears(1);
+                yield new DateValue.AbsoluteRange(startOfNextYear.atStartOfDay(), startOfNextYear.plusYears(amount).atStartOfDay(), true, false);
+            }
+            default -> null;
+        };
     }
 
     private boolean isQuarter(String matchedUnitKey) {
