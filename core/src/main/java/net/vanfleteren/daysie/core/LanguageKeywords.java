@@ -98,7 +98,7 @@ public record LanguageKeywords(
                 .tomorrow(Set.of("morgen"))
                 .dayBeforeYesterday(Set.of("eergisteren"))
                 .dayAfterTomorrow(Set.of("overmorgen"))
-                .last(Set.of("vorige", "laatste", "afgelopen"))
+                .last(Set.of("vorige", "laatste", "afgelopen", "voorbije"))
                 .next(Set.of("volgende"))
                 .current(Set.of("deze", "dit"))
                 .startOf(Set.of("begin van"))

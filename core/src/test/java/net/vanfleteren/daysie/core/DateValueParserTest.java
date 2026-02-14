@@ -114,6 +114,7 @@ class DateValueParserTest {
                 "vorige week,            '[2026-02-02T00:00,2026-02-09T00:00)'",
                 "Vorige Week,            '[2026-02-02T00:00,2026-02-09T00:00)'",
                 "afgelopen week,         '[2026-02-02T00:00,2026-02-09T00:00)'",
+                "voorbije week,          '[2026-02-02T00:00,2026-02-09T00:00)'",
                 "last month,             '[2026-01-01T00:00,2026-02-01T00:00)'",
                 "last 1 month,           '[2026-01-01T00:00,2026-02-01T00:00)'",
                 "vorige maand,           '[2026-01-01T00:00,2026-02-01T00:00)'",
@@ -129,6 +130,7 @@ class DateValueParserTest {
                 "last 3 days,            '[2026-02-11T00:00,2026-02-14T10:00)'",
                 "past 3 days,            '[2026-02-11T00:00,2026-02-14T10:00)'",
                 "last 5 minutes,         '[2026-02-14T09:55,2026-02-14T10:00)'",
+                "previous 5 minutes,     '[2026-02-14T09:55,2026-02-14T10:00)'",
                 "afgelopen 10 minuten,   '[2026-02-14T09:50,2026-02-14T10:00)'",
         })
         void parse_pastRelativeInput_returnsExpectedToString(String input, String expectedToString) {
