@@ -54,9 +54,12 @@ class DateValueParserTest {
 
                 "'BEFORE 2026-01-01',      '(-∞,2026-01-01T00:00)'",
                 "'SiNcE 2026-01-01',       '[2026-01-01T00:00, ∞)'",
+                "'2026-02',                '[2026-02-01T00:00,2026-03-01T00:00)'",
 
                 "'2026-01-01 to 2026-02-01', '[2026-01-01T00:00,2026-02-02T00:00)'",
                 "'2026-01-01 - 2026-02-01',  '[2026-01-01T00:00,2026-02-02T00:00)'",
+                "'until 2026-02',            '(-∞,2026-03-01T00:00)'",
+                "'after 2026-02',            '[2026-03-01T00:00, ∞)'",
         })
         void parse_input_returnsExpectedToString(String input, String expectedToString) {
             DateValue result = DateValueParser.DATE_VALUE_PARSER.parse(input);

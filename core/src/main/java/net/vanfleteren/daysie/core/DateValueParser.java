@@ -76,11 +76,11 @@ public class DateValueParser {
                         (op, spaces, dateValue) -> {
                             LocalDateTime date;
                             if (dateValue instanceof DateValue.AbsoluteRange ar) {
-                                date = ar.from();
+                                date = ar.until();
                             } else {
                                 throw new IllegalStateException("Unexpected DateValue type for dateOnlyParser: " + dateValue.getClass());
                             }
-                            return new DateValue.FromAbsoluteDate(date.plusDays(1), true);
+                            return new DateValue.FromAbsoluteDate(date, true);
                         }
                 ),
                 Parsers.sequence(
@@ -377,6 +377,7 @@ public class DateValueParser {
         return Parsers.or(
                 DATE_ONLY.notFollowedBy(Scanners.WHITESPACES.many().next(Scanners.isChar(Character::isDigit)))
                         .map(date -> new DateValue.AbsoluteRange(date, date.plusDays(1), true, false)),
+                YEAR_MONTH,
                 relativeDate
         );
     }
@@ -406,6 +407,14 @@ public class DateValueParser {
     );
 
     private static final Parser<LocalDateTime> DATE_ONLY = DATE.map(LocalDate::atStartOfDay);
+
+    private static final Parser<DateValue.AbsoluteRange> YEAR_MONTH = Patterns.regex("\\d{4}-\\d{2}(?!-\\d{2})")
+            .toScanner("year-month")
+            .source()
+            .map(s -> {
+                LocalDate start = LocalDate.parse(s + "-01");
+                return new DateValue.AbsoluteRange(start.atStartOfDay(), start.plusMonths(1).atStartOfDay(), true, false);
+            });
 
     public Parser<DateValue> absoluteDateTimeParser() {
         return absoluteDateTimeParser;
