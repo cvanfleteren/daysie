@@ -19,10 +19,10 @@ class DateValueTest {
     class AbsoluteRangeTest {
         @ParameterizedTest(name = "toString with fromInclusive={0}, untilInclusive={1} returns {2}")
         @CsvSource({
-                "true, true, '[2026-02-13T22:34, 2026-02-14T22:34]'",
-                "false, false, '(2026-02-13T22:34, 2026-02-14T22:34)'",
-                "true, false, '[2026-02-13T22:34, 2026-02-14T22:34)'",
-                "false, true, '(2026-02-13T22:34, 2026-02-14T22:34]'"
+                "true, true, '[2026-02-13T22:34,2026-02-14T22:34]'",
+                "false, false, '(2026-02-13T22:34,2026-02-14T22:34)'",
+                "true, false, '[2026-02-13T22:34,2026-02-14T22:34)'",
+                "false, true, '(2026-02-13T22:34,2026-02-14T22:34]'"
         })
         void toString_variousInclusivity_returnsCorrectNotation(boolean fromInclusive, boolean untilInclusive, String expected) {
             AbsoluteRange range = new AbsoluteRange(DATE_1, DATE_2, fromInclusive, untilInclusive);
@@ -43,7 +43,7 @@ class DateValueTest {
     class FromAbsoluteDateTest {
         @ParameterizedTest(name = "toString with inclusive={0} returns {1}")
         @CsvSource({
-                "true, '[2026-02-13T22:34, ∞)'",
+                "true,  '[2026-02-13T22:34, ∞)'",
                 "false, '(2026-02-13T22:34, ∞)'"
         })
         void toString_variousInclusivity_returnsCorrectNotation(boolean inclusive, String expected) {
@@ -56,7 +56,7 @@ class DateValueTest {
     class UntilAbsoluteDateTest {
         @ParameterizedTest(name = "toString with inclusive={0} returns {1}")
         @CsvSource({
-                "true, '(-∞,2026-02-13T22:34]'",
+                "true,  '(-∞,2026-02-13T22:34]'",
                 "false, '(-∞,2026-02-13T22:34)'"
         })
         void toString_variousInclusivity_returnsCorrectNotation(boolean inclusive, String expected) {

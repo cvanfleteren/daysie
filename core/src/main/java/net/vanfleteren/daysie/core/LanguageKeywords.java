@@ -1,6 +1,9 @@
 package net.vanfleteren.daysie.core;
 
+import java.time.DayOfWeek;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -13,7 +16,8 @@ public record LanguageKeywords(
         Set<String> rangeConnectorsExclusive,
         Set<String> today,
         Set<String> yesterday,
-        Set<String> tomorrow
+        Set<String> tomorrow,
+        Map<String, DayOfWeek> daysOfWeek
 ) {
     public static final LanguageKeywords ENGLISH = new LanguageKeywords(
             Set.of("<=", "until"),
@@ -24,7 +28,16 @@ public record LanguageKeywords(
             Set.of(),
             Set.of("today"),
             Set.of("yesterday"),
-            Set.of("tomorrow")
+            Set.of("tomorrow"),
+            Map.of(
+                    "monday", DayOfWeek.MONDAY,
+                    "tuesday", DayOfWeek.TUESDAY,
+                    "wednesday", DayOfWeek.WEDNESDAY,
+                    "thursday", DayOfWeek.THURSDAY,
+                    "friday", DayOfWeek.FRIDAY,
+                    "saturday", DayOfWeek.SATURDAY,
+                    "sunday", DayOfWeek.SUNDAY
+            )
     );
 
     public static final LanguageKeywords DUTCH = new LanguageKeywords(
@@ -36,10 +49,22 @@ public record LanguageKeywords(
             Set.of(),
             Set.of("vandaag"),
             Set.of("gisteren"),
-            Set.of("morgen")
+            Set.of("morgen"),
+            Map.of(
+                    "maandag", DayOfWeek.MONDAY,
+                    "dinsdag", DayOfWeek.TUESDAY,
+                    "woensdag", DayOfWeek.WEDNESDAY,
+                    "donderdag", DayOfWeek.THURSDAY,
+                    "vrijdag", DayOfWeek.FRIDAY,
+                    "zaterdag", DayOfWeek.SATURDAY,
+                    "zondag", DayOfWeek.SUNDAY
+            )
     );
 
     public static LanguageKeywords combine(List<LanguageKeywords> keywordsList) {
+        Map<String, DayOfWeek> combinedDaysOfWeek = new HashMap<>();
+        keywordsList.forEach(k -> combinedDaysOfWeek.putAll(k.daysOfWeek()));
+
         return new LanguageKeywords(
                 keywordsList.stream().flatMap(k -> k.untilInclusive().stream()).collect(Collectors.toUnmodifiableSet()),
                 keywordsList.stream().flatMap(k -> k.untilExclusive().stream()).collect(Collectors.toUnmodifiableSet()),
@@ -49,7 +74,8 @@ public record LanguageKeywords(
                 keywordsList.stream().flatMap(k -> k.rangeConnectorsExclusive().stream()).collect(Collectors.toUnmodifiableSet()),
                 keywordsList.stream().flatMap(k -> k.today().stream()).collect(Collectors.toUnmodifiableSet()),
                 keywordsList.stream().flatMap(k -> k.yesterday().stream()).collect(Collectors.toUnmodifiableSet()),
-                keywordsList.stream().flatMap(k -> k.tomorrow().stream()).collect(Collectors.toUnmodifiableSet())
+                keywordsList.stream().flatMap(k -> k.tomorrow().stream()).collect(Collectors.toUnmodifiableSet()),
+                Map.copyOf(combinedDaysOfWeek)
         );
     }
 }

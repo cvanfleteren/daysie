@@ -15,7 +15,7 @@ public interface DateValue {
             String startBracket = fromInclusive ? "[" : "(";
             String endBracket = untilInclusive ? "]" : ")";
 
-            return String.format("%s%s, %s%s", startBracket, from, until, endBracket);
+            return String.format("%s%s,%s%s", startBracket, from, until, endBracket);
         }
     }
 

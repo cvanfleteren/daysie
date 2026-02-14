@@ -8,6 +8,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,8 +49,8 @@ class DateValueParserTest {
                 "'>= 2026-02-01',          '[2026-02-01T00:00, ∞)'",
                 "'>= 2026-02-03 12:34:56', '[2026-02-03T12:34:56, ∞)'",
 
-                "'2026-01-01 to 2026-02-01', '[2026-01-01T00:00, 2026-02-01T00:00]'",
-                "'2026-01-01 - 2026-02-01', '[2026-01-01T00:00, 2026-02-01T00:00]'",
+                "'2026-01-01 to 2026-02-01', '[2026-01-01T00:00,2026-02-01T00:00]'",
+                "'2026-01-01 - 2026-02-01',  '[2026-01-01T00:00,2026-02-01T00:00]'",
         })
         void parse_input_returnsExpectedToString(String input, String expectedToString) {
             DateValue result = DateValueParser.DATE_VALUE_PARSER.parse(input);
@@ -61,15 +62,19 @@ class DateValueParserTest {
     class RelativeDateTests {
         @ParameterizedTest(name = "parse \"{0}\" with fixed clock returns {1}")
         @CsvSource({
-                "today,     '[2026-02-14T00:00,2026-02-14T00:00]'",
-                "yesterday, '[2026-02-13T00:00,2026-02-13T00:00]'",
-                "tomorrow,  '[2026-02-15T00:00,2026-02-15T00:00]'",
-                "vandaag,   '[2026-02-14T00:00,2026-02-14T00:00]'",
-                "gisteren,  '[2026-02-13T00:00,2026-02-13T00:00]'",
-                "morgen,    '[2026-02-15T00:00,2026-02-15T00:00]'"
+                "today,                  '[2026-02-14T00:00,2026-02-14T00:00]'",
+                "yesterday,              '[2026-02-13T00:00,2026-02-13T00:00]'",
+                "tomorrow,               '[2026-02-15T00:00,2026-02-15T00:00]'",
+                "vandaag,                '[2026-02-14T00:00,2026-02-14T00:00]'",
+                "gisteren,               '[2026-02-13T00:00,2026-02-13T00:00]'",
+                "morgen,                 '[2026-02-15T00:00,2026-02-15T00:00]'",
+                "monday,                 '[2026-02-09T00:00,2026-02-09T00:00]'",
+                "saturday,               '[2026-02-14T00:00,2026-02-14T00:00]'",
+                "zaterdag,               '[2026-02-14T00:00,2026-02-14T00:00]'",
+                "sunday,                 '[2026-02-08T00:00,2026-02-08T00:00]'",
         })
         void parse_relativeInput_returnsExpectedToString(String input, String expectedToString) {
-            LanguageKeywords combined = LanguageKeywords.combine(java.util.List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));
+            LanguageKeywords combined = LanguageKeywords.combine(List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));
             DateValueParser parser = new DateValueParser(combined, FIXED_CLOCK);
             DateValue result = parser.parser().parse(input);
             assertThat(result.toString()).isEqualTo(expectedToString);
@@ -77,14 +82,17 @@ class DateValueParserTest {
 
         @ParameterizedTest(name = "parse \"{0}\" with operator returns {1}")
         @CsvSource({
-                "before yesterday, '(-∞,2026-02-13T00:00)'",
-                "after today,      '(2026-02-14T00:00, ∞)'",
-                "since yesterday,  '[2026-02-13T00:00, ∞)'",
-                "until tomorrow,   '(-∞,2026-02-15T00:00]'",
-                "gisteren tot vandaag, '[2026-02-13T00:00, 2026-02-14T00:00]'"
+                "before yesterday,       '(-∞,2026-02-13T00:00)'",
+                "after today,            '(2026-02-14T00:00, ∞)'",
+                "since yesterday,        '[2026-02-13T00:00, ∞)'",
+                "until tomorrow,         '(-∞,2026-02-15T00:00]'",
+                "since saturday,         '[2026-02-14T00:00, ∞)'",
+                "after friday,           '(2026-02-13T00:00, ∞)'",
+                "gisteren tot vandaag,   '[2026-02-13T00:00,2026-02-14T00:00]'",
+                "sunday to yesterday,    '[2026-02-08T00:00,2026-02-13T00:00]'"
         })
         void parse_relativeInputWithOperator_returnsExpectedToString(String input, String expectedToString) {
-            LanguageKeywords combined = LanguageKeywords.combine(java.util.List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));
+            LanguageKeywords combined = LanguageKeywords.combine(List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));
             DateValueParser parser = new DateValueParser(combined, FIXED_CLOCK);
             DateValue result = parser.parser().parse(input);
             assertThat(result.toString()).isEqualTo(expectedToString);
@@ -95,13 +103,13 @@ class DateValueParserTest {
     class MultiLanguageParserTests {
         @ParameterizedTest(name = "Dutch parse \"{0}\" returns {1}")
         @CsvSource({
-                "'na 2026-01-01',       '(2026-01-01T00:00, ∞)'",
-                "'sinds 2026-01-01',    '[2026-01-01T00:00, ∞)'",
-                "'voor 2026-01-01',     '(-∞,2026-01-01T00:00)'",
-                "'tot 2026-01-01',      '(-∞,2026-01-01T00:00)'",
-                "'tot en met 2026-01-01', '(-∞,2026-01-01T00:00]'",
-                "'2026-01-01 tot 2026-02-01', '[2026-01-01T00:00, 2026-02-01T00:00]'",
-                "'2026-01-01 t/m 2026-02-01', '[2026-01-01T00:00, 2026-02-01T00:00]'",
+                "'na 2026-01-01',               '(2026-01-01T00:00, ∞)'",
+                "'sinds 2026-01-01',            '[2026-01-01T00:00, ∞)'",
+                "'voor 2026-01-01',             '(-∞,2026-01-01T00:00)'",
+                "'tot 2026-01-01',              '(-∞,2026-01-01T00:00)'",
+                "'tot en met 2026-01-01',       '(-∞,2026-01-01T00:00]'",
+                "'2026-01-01 tot 2026-02-01',   '[2026-01-01T00:00,2026-02-01T00:00]'",
+                "'2026-01-01 t/m 2026-02-01',   '[2026-01-01T00:00,2026-02-01T00:00]'",
         })
         void parse_dutchInput_returnsExpectedToString(String input, String expectedToString) {
             DateValueParser dutchParser = new DateValueParser(LanguageKeywords.DUTCH);
@@ -117,7 +125,7 @@ class DateValueParserTest {
                 "'sinds 2026-01-01',    '[2026-01-01T00:00, ∞)'",
         })
         void parse_combinedInput_returnsExpectedToString(String input, String expectedToString) {
-            LanguageKeywords combined = LanguageKeywords.combine(java.util.List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));
+            LanguageKeywords combined = LanguageKeywords.combine(List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));
             DateValueParser combinedParser = new DateValueParser(combined);
             DateValue result = combinedParser.parser().parse(input);
             assertThat(result.toString()).isEqualTo(expectedToString);
