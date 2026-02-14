@@ -61,6 +61,15 @@ class DateValueParserTest {
                 "'2026-01-01 - 2026-02-01',  '[2026-01-01T00:00,2026-02-02T00:00)'",
                 "'until 2026-02',            '(-∞,2026-03-01T00:00)'",
                 "'after 2026-02',            '[2026-03-01T00:00, ∞)'",
+                "'start of last month',      '[2026-01-01T00:00,2026-01-01T00:00]'",
+                "'end of last month',        '(2026-02-01T00:00,2026-02-01T00:00)'",
+                "'since end of last month',  '[2026-02-01T00:00, ∞)'",
+                "'since this month',         '[2026-02-01T00:00, ∞)'",
+                "'since start of last year', '[2025-01-01T00:00, ∞)'",
+                "'since start of last month','[2026-01-01T00:00, ∞)'",
+                "'until end of this month',  '(-∞,2026-03-01T00:00)'",
+                "'begin van vorige week',    '[2026-02-02T00:00,2026-02-02T00:00]'",
+                "'einde van dit jaar',       '(2027-01-01T00:00,2027-01-01T00:00)'",
         })
         void parse_input_returnsExpectedToString(String input, String expectedToString) {
             LanguageKeywords combined = LanguageKeywords.combine(List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));

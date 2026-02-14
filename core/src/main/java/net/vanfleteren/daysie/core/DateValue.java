@@ -19,9 +19,14 @@ public interface DateValue {
         }
     }
 
-    record AbsoluteDate(LocalDateTime date) implements AbsoluteDateValue {
+    record AbsoluteDate(LocalDateTime date, boolean isRangeBoundary, boolean isInclusive) implements AbsoluteDateValue {
         @Override
         public @NonNull String toString() {
+            if (isRangeBoundary) {
+                String startBracket = isInclusive ? "[" : "(";
+                String endBracket = isInclusive ? "]" : ")";
+                return String.format("%s%s,%s%s", startBracket, date, date, endBracket);
+            }
             return String.format("[%s,%s]", date, date);
         }
     }

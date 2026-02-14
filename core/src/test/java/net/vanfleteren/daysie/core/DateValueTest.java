@@ -34,7 +34,7 @@ class DateValueTest {
     class AbsoluteDateTest {
         @Test
         void toString_singleDate_returnsPointRange() {
-            AbsoluteDate date = new AbsoluteDate(DATE_1);
+            AbsoluteDate date = new AbsoluteDate(DATE_1, false, true);
             assertThat(date.toString()).isEqualTo("[2026-02-13T22:34,2026-02-13T22:34]");
         }
     }

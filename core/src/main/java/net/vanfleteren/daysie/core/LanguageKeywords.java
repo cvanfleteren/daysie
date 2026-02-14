@@ -21,6 +21,8 @@ public record LanguageKeywords(
         Set<String> last,
         Set<String> next,
         Set<String> current,
+        Set<String> startOf,
+        Set<String> endOf,
         Map<String, ChronoUnit> chronoUnits,
         Map<String, DayOfWeek> daysOfWeek
     ) {
@@ -37,6 +39,8 @@ public record LanguageKeywords(
                 Set.of("last", "previous", "past"),
                 Set.of("next"),
                 Set.of("this"),
+                Set.of("start of", "beginning of"),
+                Set.of("end of"),
                 Map.ofEntries(
                         Map.entry("hour", ChronoUnit.HOURS),
                         Map.entry("hours", ChronoUnit.HOURS),
@@ -77,6 +81,8 @@ public record LanguageKeywords(
                 Set.of("vorige", "laatste", "afgelopen"),
                 Set.of("volgende"),
                 Set.of("deze", "dit"),
+                Set.of("begin van"),
+                Set.of("einde van"),
                 Map.ofEntries(
                         Map.entry("uur", ChronoUnit.HOURS),
                         Map.entry("uren", ChronoUnit.HOURS),
@@ -123,6 +129,8 @@ public record LanguageKeywords(
                     keywordsList.stream().flatMap(k -> k.last().stream()).collect(Collectors.toUnmodifiableSet()),
                     keywordsList.stream().flatMap(k -> k.next().stream()).collect(Collectors.toUnmodifiableSet()),
                     keywordsList.stream().flatMap(k -> k.current().stream()).collect(Collectors.toUnmodifiableSet()),
+                    keywordsList.stream().flatMap(k -> k.startOf().stream()).collect(Collectors.toUnmodifiableSet()),
+                    keywordsList.stream().flatMap(k -> k.endOf().stream()).collect(Collectors.toUnmodifiableSet()),
                     Map.copyOf(combinedChronoUnits),
                     Map.copyOf(combinedDaysOfWeek)
             );
