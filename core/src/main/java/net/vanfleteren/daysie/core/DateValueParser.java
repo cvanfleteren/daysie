@@ -471,12 +471,15 @@ public class DateValueParser {
     }
 
     private static Parser<DateValue> createAbsoluteDateTimeParser(LanguageKeywords keywords, Clock clock) {
+        Parser<DateValue> nowParser = toScanner(keywords.now()).map(ignored -> new DateValue.AbsoluteDate(LocalDateTime.now(clock), false, true));
+
         Parser<DateValue> timeOnly = TIME.map(time -> {
             LocalDate today = LocalDate.now(clock);
             return new DateValue.AbsoluteDate(LocalDateTime.of(today, time), false, true);
         });
 
         return Parsers.longest(
+                nowParser,
                 DATE_TIME.map(dt -> new DateValue.AbsoluteDate(dt, false, true)),
                 createDateOnlyParser(keywords, clock),
                 timeOnly

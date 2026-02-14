@@ -101,6 +101,8 @@ class DateValueParserTest {
                 "TODAY,                  '[2026-02-14T00:00,2026-02-15T00:00)'",
                 "Yesterday,              '[2026-02-13T00:00,2026-02-14T00:00)'",
                 "MONDAY,                 '[2026-02-09T00:00,2026-02-10T00:00)'",
+                "now,                    '[2026-02-14T10:00,2026-02-14T10:00]'",
+                "nu,                     '[2026-02-14T10:00,2026-02-14T10:00]'",
         })
         void parse_fixedRelativeInput_returnsExpectedToString(String input, String expectedToString) {
             parseAndAssert(input, expectedToString);
@@ -179,6 +181,7 @@ class DateValueParserTest {
                 "until tomorrow,         '(-∞,2026-02-16T00:00)'",
                 "since saturday,         '[2026-02-14T00:00, ∞)'",
                 "after friday,           '[2026-02-14T00:00, ∞)'",
+                "since now,              '[2026-02-14T10:00, ∞)'",
                 "gisteren ToT vandaag,   '[2026-02-13T00:00,2026-02-15T00:00)'",
                 "sunday to yesterday,    '[2026-02-08T00:00,2026-02-14T00:00)'"
         })

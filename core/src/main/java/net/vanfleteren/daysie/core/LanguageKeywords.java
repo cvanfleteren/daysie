@@ -31,6 +31,7 @@ public record LanguageKeywords(
         Set<String> endOf,
         Set<String> between,
         Set<String> and,
+        Set<String> now,
         Map<String, ChronoUnit> chronoUnits,
         Map<String, DayOfWeek> daysOfWeek
     ) {
@@ -53,6 +54,7 @@ public record LanguageKeywords(
                 .endOf(Set.of("end of"))
                 .between(Set.of("between"))
                 .and(Set.of("and"))
+                .now(Set.of("now"))
                 .chronoUnits(Map.ofEntries(
                         Map.entry("hour", ChronoUnit.HOURS),
                         Map.entry("hours", ChronoUnit.HOURS),
@@ -99,6 +101,7 @@ public record LanguageKeywords(
                 .endOf(Set.of("einde van"))
                 .between(Set.of("tussen"))
                 .and(Set.of("en"))
+                .now(Set.of("nu"))
                 .chronoUnits(Map.ofEntries(
                         Map.entry("uur", ChronoUnit.HOURS),
                         Map.entry("uren", ChronoUnit.HOURS),
@@ -155,6 +158,7 @@ public record LanguageKeywords(
                     .endOf(combineSets.apply(LanguageKeywords::endOf))
                     .between(combineSets.apply(LanguageKeywords::between))
                     .and(combineSets.apply(LanguageKeywords::and))
+                    .now(combineSets.apply(LanguageKeywords::now))
                     .chronoUnits(Map.copyOf(combinedChronoUnits))
                     .daysOfWeek(Map.copyOf(combinedDaysOfWeek))
                     .build();
