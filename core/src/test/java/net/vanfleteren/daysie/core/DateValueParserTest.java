@@ -70,8 +70,13 @@ class DateValueParserTest {
                 "'until end of this month',  '(-∞,2026-03-01T00:00)'",
                 "'begin van vorige week',    '[2026-02-02T00:00,2026-02-02T00:00]'",
                 "'einde van dit jaar',       '(2027-01-01T00:00,2027-01-01T00:00)'",
-                "'between 2026-01-01 and 2026-02-01', '[2026-01-01T00:00,2026-02-02T00:00)'",
-                "'tussen gisteren en vandaag',        '[2026-02-13T00:00,2026-02-15T00:00)'",
+
+                "'between 2026-01-01 and 2026-02-01',           '[2026-01-01T00:00,2026-02-02T00:00)'",
+                "'tussen gisteren en vandaag',                  '[2026-02-13T00:00,2026-02-15T00:00)'",
+                "'tussen gisteren en nu',                       '[2026-02-13T00:00,2026-02-14T10:00]'",
+
+                "'between 5 minutes ago and now',               '[2026-02-14T09:55,2026-02-14T10:00]'",
+                "'between 5 minutes ago and 2 minutes ago',     '[2026-02-14T09:55,2026-02-14T09:58]'",
         })
         void parse_input_returnsExpectedToString(String input, String expectedToString) {
             LanguageKeywords combined = LanguageKeywords.combine(List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));
@@ -234,6 +239,25 @@ class DateValueParserTest {
             DateValueParser combinedParser = new DateValueParser(combined);
             DateValue result = combinedParser.parser().parse(input);
             assertThat(result.toString()).isEqualTo(expectedToString);
+        }
+    }
+
+    @Nested
+    class SynonymTests {
+        @ParameterizedTest(name = "parse \"{0}\" and \"{1}\" are synonyms")
+        @CsvSource({
+                "'last 1 month',                'last month'",
+                "'today',                       'this day'",
+                "'since yesterday',             'from yesterday'",
+                "'between yesterday and today', 'yesterday to today'",
+                "'since 5 minutes ago',         'since last 5 minutes'"
+        })
+        void parse_synonymInputs_returnsSameToString(String input1, String input2) {
+            LanguageKeywords combined = LanguageKeywords.combine(List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));
+            DateValueParser parser = new DateValueParser(combined, FIXED_CLOCK);
+            DateValue result1 = parser.parser().parse(input1);
+            DateValue result2 = parser.parser().parse(input2);
+            assertThat(result1.toString()).isEqualTo(result2.toString());
         }
     }
 }

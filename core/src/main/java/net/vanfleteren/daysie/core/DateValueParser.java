@@ -157,14 +157,18 @@ public class DateValueParser {
                 absoluteDateTimeParser
         );
 
+        Parser<DateValue> finalAbsoluteDateTimeParser;
+        Parser.Reference<DateValue> finalAbsoluteDateTimeParserRef = Parser.newReference();
+        finalAbsoluteDateTimeParser = finalAbsoluteDateTimeParserRef.lazy();
+
         Parser<DateValue> betweenParser = Parsers.sequence(
                 toScanner(keywords.between()),
                 Scanners.WHITESPACES.atLeast(1),
-                absoluteDateTimeParser,
+                finalAbsoluteDateTimeParser,
                 Scanners.WHITESPACES.atLeast(1),
                 toScanner(keywords.and()),
                 Scanners.WHITESPACES.atLeast(1),
-                absoluteDateTimeParser,
+                finalAbsoluteDateTimeParser,
                 (op1, s1, fromValue, s2, op2, s3, untilValue) -> {
                     LocalDateTime from;
                     LocalDateTime until;
@@ -222,14 +226,14 @@ public class DateValueParser {
                 }
         );
 
-        Parser<DateValue> finalAbsoluteDateTimeParser = Parsers.or(
+        finalAbsoluteDateTimeParserRef.set(Parsers.or(
                 startOfParser,
                 endOfParser,
                 betweenParser,
                 agoParser,
                 fromNowParser,
                 modifiedDateValueParser
-        );
+        ));
 
         Parser<String> untilInclusive = toScanner(keywords.untilInclusive());
         Parser<String> untilExclusive = toScanner(keywords.untilExclusive());

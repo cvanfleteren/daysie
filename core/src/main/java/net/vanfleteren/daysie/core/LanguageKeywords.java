@@ -40,7 +40,7 @@ public record LanguageKeywords(
         public static final LanguageKeywords ENGLISH = LanguageKeywords.builder()
                 .untilInclusive(Set.of("<=", "until"))
                 .untilExclusive(Set.of("<", "before"))
-                .fromInclusive(Set.of(">=", "since"))
+                .fromInclusive(Set.of(">=", "since", "from"))
                 .fromExclusive(Set.of(">", "after"))
                 .rangeConnectorsInclusive(Set.of("to","-"))
                 .rangeConnectorsExclusive(Set.of())
