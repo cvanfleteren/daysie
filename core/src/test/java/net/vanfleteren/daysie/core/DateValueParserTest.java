@@ -112,6 +112,9 @@ class DateValueParserTest {
                 "MONDAY,                 '[2026-02-09T00:00,2026-02-10T00:00)'",
                 "now,                    '[2026-02-14T10:00,2026-02-14T10:00]'",
                 "nu,                     '[2026-02-14T10:00,2026-02-14T10:00]'",
+                "'next monday',          '[2026-02-16T00:00,2026-02-17T00:00)'",
+                "'last friday',          '[2026-02-13T00:00,2026-02-14T00:00)'",
+                "'previous monday',      '[2026-02-09T00:00,2026-02-10T00:00)'"
         })
         void parse_fixedRelativeInput_returnsExpectedToString(String input, String expectedToString) {
             parseAndAssert(input, expectedToString);
@@ -219,7 +222,7 @@ class DateValueParserTest {
                 "2 days ago 10:00,       '[2026-02-12T10:00,2026-02-12T10:00]'",
                 "2 days ago at 10:00,    '[2026-02-12T10:00,2026-02-12T10:00]'",
                 "2 dagen geleden 14:00,  '[2026-02-12T14:00,2026-02-12T14:00]'",
-                "2 dagen geleden om 14:00, '[2026-02-12T14:00,2026-02-12T14:00]'",
+                "2 dagen geleden om 14:00, '[2026-02-12T14:00,2026-02-12T14:00]'"
         })
         void parse_relativeInputWithOperator_returnsExpectedToString(String input, String expectedToString) {
             LanguageKeywords combined = LanguageKeywords.combine(List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));
