@@ -94,6 +94,37 @@ public class DateValueParser {
                 }
         ).notFollowedBy(Scanners.WHITESPACES.many().next(toScanner(keywords.at()).optional().next(Scanners.WHITESPACES.many()).next(TIME)));
 
+        Parser<DayOfWeek> dayOfWeekParser = Parsers.or(
+                keywords.daysOfWeek().entrySet().stream()
+                        .sorted((e1, e2) -> e2.getKey().length() - e1.getKey().length())
+                        .map(entry -> Scanners.stringCaseInsensitive(entry.getKey()).source().map(ignored -> entry.getValue()))
+                        .toList()
+        );
+
+        Parser<DateValue> dayOfWeekAgoParser = Parsers.sequence(
+                numberParser.optional(1),
+                Scanners.WHITESPACES.many(),
+                dayOfWeekParser,
+                Scanners.WHITESPACES.many(),
+                toScanner(keywords.ago()),
+                (amount, s1, dayOfWeek, s2, op) -> {
+                    LocalDateTime now = LocalDateTime.now(clock);
+                    return calculateDayOfWeekAgo(now, dayOfWeek, amount);
+                }
+        );
+
+        Parser<DateValue> dayOfWeekFromNowParser = Parsers.sequence(
+                numberParser.optional(1),
+                Scanners.WHITESPACES.many(),
+                dayOfWeekParser,
+                Scanners.WHITESPACES.many(),
+                toScanner(keywords.fromNow()),
+                (amount, s1, dayOfWeek, s2, op) -> {
+                    LocalDateTime now = LocalDateTime.now(clock);
+                    return calculateDayOfWeekFromNow(now, dayOfWeek, amount);
+                }
+        );
+
         Parser<DateValue> agoParser = Parsers.sequence(
                 numberParser.optional(1),
                 Scanners.WHITESPACES.many(),
@@ -118,7 +149,7 @@ public class DateValueParser {
                 }
         );
 
-        Parser<DateValue> relativePoint = Parsers.or(agoParser, fromNowParser);
+        Parser<DateValue> relativePoint = Parsers.or(dayOfWeekAgoParser, dayOfWeekFromNowParser, agoParser, fromNowParser);
 
         Parser<DateValue> relativePointWithTime = Parsers.sequence(
                 relativePoint,
@@ -513,6 +544,18 @@ public class DateValueParser {
 
     private DateValue calculateFromNowDate(LocalDateTime now, ChronoUnit unit, int amount) {
         return new DateValue.AbsoluteDate(now.plus(amount, unit), false, true);
+    }
+
+    private DateValue calculateDayOfWeekAgo(LocalDateTime now, DayOfWeek dayOfWeek, int amount) {
+        LocalDate today = now.toLocalDate();
+        LocalDate target = today.with(TemporalAdjusters.previousOrSame(dayOfWeek)).minusWeeks(amount - 1L);
+        return new DateValue.AbsoluteDate(target.atStartOfDay(), false, true);
+    }
+
+    private DateValue calculateDayOfWeekFromNow(LocalDateTime now, DayOfWeek dayOfWeek, int amount) {
+        LocalDate today = now.toLocalDate();
+        LocalDate target = today.with(TemporalAdjusters.nextOrSame(dayOfWeek)).plusWeeks(amount - 1L);
+        return new DateValue.AbsoluteDate(target.atStartOfDay(), false, true);
     }
 
     private static boolean containsIgnoreCase(Set<String> set, String value) {

@@ -85,14 +85,21 @@ public record LanguageKeywords(
                         Map.entry("days", ChronoUnit.DAYS),
                         Map.entry("d", ChronoUnit.DAYS)
                 ))
-                .daysOfWeek(Map.of(
-                        "monday", DayOfWeek.MONDAY,
-                        "tuesday", DayOfWeek.TUESDAY,
-                        "wednesday", DayOfWeek.WEDNESDAY,
-                        "thursday", DayOfWeek.THURSDAY,
-                        "friday", DayOfWeek.FRIDAY,
-                        "saturday", DayOfWeek.SATURDAY,
-                        "sunday", DayOfWeek.SUNDAY
+                .daysOfWeek(Map.ofEntries(
+                        Map.entry("monday", DayOfWeek.MONDAY),
+                        Map.entry("mondays", DayOfWeek.MONDAY),
+                        Map.entry("tuesday", DayOfWeek.TUESDAY),
+                        Map.entry("tuesdays", DayOfWeek.TUESDAY),
+                        Map.entry("wednesday", DayOfWeek.WEDNESDAY),
+                        Map.entry("wednesdays", DayOfWeek.WEDNESDAY),
+                        Map.entry("thursday", DayOfWeek.THURSDAY),
+                        Map.entry("thursdays", DayOfWeek.THURSDAY),
+                        Map.entry("friday", DayOfWeek.FRIDAY),
+                        Map.entry("fridays", DayOfWeek.FRIDAY),
+                        Map.entry("saturday", DayOfWeek.SATURDAY),
+                        Map.entry("saturdays", DayOfWeek.SATURDAY),
+                        Map.entry("sunday", DayOfWeek.SUNDAY),
+                        Map.entry("sundays", DayOfWeek.SUNDAY)
                 ))
                 .build();
 
@@ -143,14 +150,21 @@ public record LanguageKeywords(
                         Map.entry("dagen", ChronoUnit.DAYS),
                         Map.entry("d", ChronoUnit.DAYS)
                 ))
-                .daysOfWeek(Map.of(
-                        "maandag", DayOfWeek.MONDAY,
-                        "dinsdag", DayOfWeek.TUESDAY,
-                        "woensdag", DayOfWeek.WEDNESDAY,
-                        "donderdag", DayOfWeek.THURSDAY,
-                        "vrijdag", DayOfWeek.FRIDAY,
-                        "zaterdag", DayOfWeek.SATURDAY,
-                        "zondag", DayOfWeek.SUNDAY
+                .daysOfWeek(Map.ofEntries(
+                        Map.entry("maandag", DayOfWeek.MONDAY),
+                        Map.entry("maandagen", DayOfWeek.MONDAY),
+                        Map.entry("dinsdag", DayOfWeek.TUESDAY),
+                        Map.entry("dinsdagen", DayOfWeek.TUESDAY),
+                        Map.entry("woensdag", DayOfWeek.WEDNESDAY),
+                        Map.entry("woensdagen", DayOfWeek.WEDNESDAY),
+                        Map.entry("donderdag", DayOfWeek.THURSDAY),
+                        Map.entry("donderdagen", DayOfWeek.THURSDAY),
+                        Map.entry("vrijdag", DayOfWeek.FRIDAY),
+                        Map.entry("vrijdagen", DayOfWeek.FRIDAY),
+                        Map.entry("zaterdag", DayOfWeek.SATURDAY),
+                        Map.entry("zaterdagen", DayOfWeek.SATURDAY),
+                        Map.entry("zondag", DayOfWeek.SUNDAY),
+                        Map.entry("zondagen", DayOfWeek.SUNDAY)
                 ))
                 .build();
 
