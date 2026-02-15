@@ -35,6 +35,8 @@ public record LanguageKeywords(
         Set<String> now,
         Set<String> ago,
         Set<String> fromNow,
+        Set<String> am,
+        Set<String> pm,
         Map<String, ChronoUnit> chronoUnits,
         Map<String, DayOfWeek> daysOfWeek
     ) {
@@ -61,6 +63,8 @@ public record LanguageKeywords(
                 .now(Set.of("now"))
                 .ago(Set.of("ago"))
                 .fromNow(Set.of("from now"))
+                .am(Set.of("AM"))
+                .pm(Set.of("PM"))
                 .chronoUnits(Map.ofEntries(
                         Map.entry("hour", ChronoUnit.HOURS),
                         Map.entry("hours", ChronoUnit.HOURS),
@@ -126,6 +130,8 @@ public record LanguageKeywords(
                 .now(Set.of("nu"))
                 .ago(Set.of("geleden", "terug"))
                 .fromNow(Set.of("vanaf nu"))
+                .am(Set.of("AM"))
+                .pm(Set.of("PM"))
                 .chronoUnits(Map.ofEntries(
                         Map.entry("uur", ChronoUnit.HOURS),
                         Map.entry("uren", ChronoUnit.HOURS),
@@ -201,6 +207,8 @@ public record LanguageKeywords(
                     .now(combineSets.apply(LanguageKeywords::now))
                     .ago(combineSets.apply(LanguageKeywords::ago))
                     .fromNow(combineSets.apply(LanguageKeywords::fromNow))
+                    .am(combineSets.apply(LanguageKeywords::am))
+                    .pm(combineSets.apply(LanguageKeywords::pm))
                     .chronoUnits(Map.copyOf(combinedChronoUnits))
                     .daysOfWeek(Map.copyOf(combinedDaysOfWeek))
                     .build();

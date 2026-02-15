@@ -34,7 +34,8 @@ public class DateValueParser {
 
     public DateValueParser(LanguageKeywords keywords, Clock clock) {
         this.dateOnlyParser = createDateOnlyParser(keywords, clock);
-        this.absoluteDateTimeParser = createAbsoluteDateTimeParser(keywords, clock);
+        Parser<LocalTime> timeParser = createTimeParser(keywords);
+        this.absoluteDateTimeParser = createAbsoluteDateTimeParser(keywords, clock, timeParser);
 
         Parser<Integer> numberParser = Scanners.INTEGER.map(Integer::parseInt);
 
@@ -156,7 +157,7 @@ public class DateValueParser {
                 Scanners.WHITESPACES.atLeast(1),
                 toScanner(keywords.at()).optional(),
                 Scanners.WHITESPACES.many(),
-                TIME,
+                timeParser,
                 (pointVal, s1, at, s2, time) -> {
                     if (pointVal instanceof DateValue.AbsoluteDate ad) {
                         LocalDateTime dt = LocalDateTime.of(ad.date().toLocalDate(), time);
@@ -566,7 +567,7 @@ public class DateValueParser {
         return Parsers.or(keywords.stream().sorted(BY_LENGTH_DESC).map(Scanners::stringCaseInsensitive).toList()).source();
     }
 
-    private static Parser<DateValue> createAbsoluteDateTimeParser(LanguageKeywords keywords, Clock clock) {
+    private static Parser<DateValue> createAbsoluteDateTimeParser(LanguageKeywords keywords, Clock clock, Parser<LocalTime> timeParser) {
         Parser<DateValue> nowParser = toScanner(keywords.now()).map(ignored -> new DateValue.AbsoluteDate(LocalDateTime.now(clock), false, true));
 
         Parser<DateValue> relativeDate = createRelativeDateParser(keywords, clock);
@@ -576,7 +577,7 @@ public class DateValueParser {
                 Scanners.WHITESPACES.atLeast(1),
                 toScanner(keywords.at()).optional(),
                 Scanners.WHITESPACES.many(),
-                TIME,
+                timeParser,
                 (dateVal, s1, at, s2, time) -> {
                     LocalDateTime dt;
                     if (dateVal instanceof DateValue.AbsoluteRange ar) {
@@ -590,14 +591,21 @@ public class DateValueParser {
                 }
         );
 
-        Parser<DateValue> timeOnly = TIME.map(time -> {
+        Parser<DateValue> timeOnly = timeParser.map(time -> {
             LocalDate today = LocalDate.now(clock);
             return new DateValue.AbsoluteDate(LocalDateTime.of(today, time), false, true);
         });
 
+        Parser<LocalDateTime> dateTimeParser = Parsers.sequence(
+                DATE,
+                Parsers.or(Scanners.WHITESPACES.atLeast(1), Scanners.stringCaseInsensitive("T")),
+                timeParser,
+                (date, separator, time) -> LocalDateTime.of(date, time)
+        );
+
         return Parsers.longest(
                 nowParser,
-                DATE_TIME.map(dt -> new DateValue.AbsoluteDate(dt, false, true)),
+                dateTimeParser.map(dt -> new DateValue.AbsoluteDate(dt, false, true)),
                 relativeDateWithTime,
                 createDateOnlyParser(keywords, clock),
                 timeOnly
@@ -661,6 +669,45 @@ public class DateValueParser {
                 YEAR_MONTH,
                 createRelativeDateParser(keywords, clock)
         );
+    }
+
+    private static Parser<LocalTime> createTimeParser(LanguageKeywords keywords) {
+        Parser<LocalTime> time24h = Parsers.or(
+                Patterns.regex("\\d{2}:\\d{2}:\\d{2}")
+                        .toScanner("time-with-seconds")
+                        .source()
+                        .map(LocalTime::parse),
+                Patterns.regex("\\d{2}:\\d{2}")
+                        .toScanner("time-without-seconds")
+                        .source()
+                        .map(s -> LocalTime.parse(s + ":00"))
+        );
+
+        Parser<Integer> hourParser = Patterns.INTEGER.toScanner("hour").source().map(Integer::parseInt);
+        Parser<Integer> minuteParser = Patterns.regex("\\d{2}").toScanner("minute").source().map(Integer::parseInt);
+        Parser<Integer> secondParser = Patterns.regex("\\d{2}").toScanner("second").source().map(Integer::parseInt);
+
+        Parser<Boolean> amParser = toScanner(keywords.am()).map(ignored -> true);
+        Parser<Boolean> pmParser = toScanner(keywords.pm()).map(ignored -> false);
+        Parser<Boolean> amPmParser = Parsers.or(amParser, pmParser);
+
+        Parser<LocalTime> time12h = Parsers.sequence(
+                hourParser,
+                Parsers.sequence(Scanners.isChar(':'), minuteParser).optional(),
+                Parsers.sequence(Scanners.isChar(':'), secondParser).optional(),
+                Scanners.WHITESPACES.many(),
+                amPmParser,
+                (hour, min, sec, s, isAm) -> {
+                    int h = hour;
+                    if (!isAm && h < 12) h += 12;
+                    if (isAm && h == 12) h = 0;
+                    int m = min == null ? 0 : min;
+                    int s1 = sec == null ? 0 : sec;
+                    return LocalTime.of(h, m, s1);
+                }
+        );
+
+        return Parsers.longest(time24h, time12h);
     }
 
     private static final Parser<LocalDate> DATE = Patterns.regex("\\d{4}-\\d{2}-\\d{2}")
