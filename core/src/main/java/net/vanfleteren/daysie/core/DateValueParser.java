@@ -5,15 +5,10 @@ import org.jparsec.Parsers;
 import org.jparsec.Scanners;
 import org.jparsec.pattern.Patterns;
 
-import java.time.Clock;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Comparator;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -22,7 +17,6 @@ public class DateValueParser {
 
     private final Parser<DateValue> dateValueParser;
     private final Parser<DateValue> absoluteDateTimeParser;
-    private final Parser<DateValue> dateOnlyParser;
 
     public DateValueParser() {
         this(LanguageKeywords.ENGLISH, Clock.systemDefaultZone());
@@ -33,7 +27,7 @@ public class DateValueParser {
     }
 
     public DateValueParser(LanguageKeywords keywords, Clock clock) {
-        this.dateOnlyParser = createDateOnlyParser(keywords, clock);
+        Parser<DateValue> dateOnlyParser = createDateOnlyParser(keywords, clock);
         Parser<LocalTime> timeParser = createTimeParser(keywords);
         this.absoluteDateTimeParser = createAbsoluteDateTimeParser(keywords, clock, timeParser);
 
@@ -44,7 +38,7 @@ public class DateValueParser {
         Parser<ChronoUnitInfo> chronoUnitParser = Parsers.or(
                 keywords.chronoUnits().entrySet().stream()
                         .sorted((e1, e2) -> e2.getKey().length() - e1.getKey().length())
-                        .map(entry -> toScanner(Set.of(entry.getKey())).map(ignored -> new ChronoUnitInfo(entry.getValue(), isQuarter(entry.getKey()))))
+                        .map(entry -> toScanner(Set.of(entry.getKey())).map(ignored -> new ChronoUnitInfo(entry.getValue(), containsIgnoreCase(keywords.quarters(), entry.getKey()))))
                         .toList()
         );
 
@@ -596,10 +590,6 @@ public class DateValueParser {
         };
     }
 
-    private boolean isQuarter(String matchedUnitKey) {
-        return matchedUnitKey.equalsIgnoreCase("quarter") || matchedUnitKey.equalsIgnoreCase("quarters")
-                || matchedUnitKey.equalsIgnoreCase("kwartaal") || matchedUnitKey.equalsIgnoreCase("kwartalen");
-    }
 
     private LocalDate getStartOfQuarter(LocalDate date) {
         int currentMonth = date.getMonthValue();
@@ -703,10 +693,12 @@ public class DateValueParser {
                             LocalDate date = LocalDate.now(clock).plusDays(2);
                             return (DateValue) new DateValue.AbsoluteRange(date.atStartOfDay(), date.plusDays(1).atStartOfDay(), true, false);
                         })),
+                        // Maps days of week to previous or same day range
                         keywords.daysOfWeek().entrySet().stream().map(entry -> Scanners.stringCaseInsensitive(entry.getKey()).map(ignored -> {
                             LocalDate day = LocalDate.now(clock).with(TemporalAdjusters.previousOrSame(entry.getValue()));
                             return (DateValue) new DateValue.AbsoluteRange(day.atStartOfDay(), day.plusDays(1).atStartOfDay(), true, false);
                         })),
+                        // Maps "next <day>" to next occurrence of day range
                         keywords.daysOfWeek().entrySet().stream().map(entry -> Parsers.sequence(
                                 toScanner(keywords.next()),
                                 Scanners.WHITESPACES.atLeast(1),
@@ -716,6 +708,7 @@ public class DateValueParser {
                                     return (DateValue) new DateValue.AbsoluteRange(day.atStartOfDay(), day.plusDays(1).atStartOfDay(), true, false);
                                 }
                         )),
+                        // Maps "last <day>" to previous occurrence of day range
                         keywords.daysOfWeek().entrySet().stream().map(entry -> Parsers.sequence(
                                 toScanner(keywords.last()),
                                 Scanners.WHITESPACES.atLeast(1),
