@@ -29,6 +29,8 @@ public record LanguageKeywords(
         Set<String> current,
         Set<String> startOf,
         Set<String> endOf,
+        Set<String> firstDayOf,
+        Set<String> lastDayOf,
         Set<String> between,
         Set<String> and,
         Set<String> at,
@@ -37,6 +39,7 @@ public record LanguageKeywords(
         Set<String> fromNow,
         Set<String> am,
         Set<String> pm,
+        Set<String> in,
         Map<String, ChronoUnit> chronoUnits,
         Map<String, DayOfWeek> daysOfWeek
     ) {
@@ -57,6 +60,8 @@ public record LanguageKeywords(
                 .current(Set.of("this"))
                 .startOf(Set.of("start of", "beginning of"))
                 .endOf(Set.of("end of"))
+                .firstDayOf(Set.of("first day of"))
+                .lastDayOf(Set.of("last day of"))
                 .between(Set.of("between"))
                 .and(Set.of("and"))
                 .at(Set.of("at"))
@@ -65,6 +70,7 @@ public record LanguageKeywords(
                 .fromNow(Set.of("from now"))
                 .am(Set.of("AM"))
                 .pm(Set.of("PM"))
+                .in(Set.of("in"))
                 .chronoUnits(Map.ofEntries(
                         Map.entry("hour", ChronoUnit.HOURS),
                         Map.entry("hours", ChronoUnit.HOURS),
@@ -124,6 +130,8 @@ public record LanguageKeywords(
                 .current(Set.of("deze", "dit"))
                 .startOf(Set.of("begin van"))
                 .endOf(Set.of("einde van"))
+                .firstDayOf(Set.of("eerste dag van"))
+                .lastDayOf(Set.of("laatste dag van"))
                 .between(Set.of("tussen"))
                 .and(Set.of("en"))
                 .at(Set.of("om"))
@@ -132,6 +140,7 @@ public record LanguageKeywords(
                 .fromNow(Set.of("vanaf nu"))
                 .am(Set.of("AM"))
                 .pm(Set.of("PM"))
+                .in(Set.of("over"))
                 .chronoUnits(Map.ofEntries(
                         Map.entry("uur", ChronoUnit.HOURS),
                         Map.entry("uren", ChronoUnit.HOURS),
@@ -201,6 +210,8 @@ public record LanguageKeywords(
                     .current(combineSets.apply(LanguageKeywords::current))
                     .startOf(combineSets.apply(LanguageKeywords::startOf))
                     .endOf(combineSets.apply(LanguageKeywords::endOf))
+                    .firstDayOf(combineSets.apply(LanguageKeywords::firstDayOf))
+                    .lastDayOf(combineSets.apply(LanguageKeywords::lastDayOf))
                     .between(combineSets.apply(LanguageKeywords::between))
                     .and(combineSets.apply(LanguageKeywords::and))
                     .at(combineSets.apply(LanguageKeywords::at))
@@ -209,6 +220,7 @@ public record LanguageKeywords(
                     .fromNow(combineSets.apply(LanguageKeywords::fromNow))
                     .am(combineSets.apply(LanguageKeywords::am))
                     .pm(combineSets.apply(LanguageKeywords::pm))
+                    .in(combineSets.apply(LanguageKeywords::in))
                     .chronoUnits(Map.copyOf(combinedChronoUnits))
                     .daysOfWeek(Map.copyOf(combinedDaysOfWeek))
                     .build();

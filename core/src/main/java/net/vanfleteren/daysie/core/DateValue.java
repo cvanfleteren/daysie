@@ -19,11 +19,6 @@ public sealed interface DateValue {
     record AbsoluteDate(LocalDateTime date, boolean isRangeBoundary, boolean isInclusive) implements DateValue {
         @Override
         public @NonNull String toString() {
-            if (isRangeBoundary) {
-                String startBracket = isInclusive ? "[" : "(";
-                String endBracket = isInclusive ? "]" : ")";
-                return String.format("%s%s,%s%s", startBracket, date, date, endBracket);
-            }
             return String.format("[%s,%s]", date, date);
         }
     }

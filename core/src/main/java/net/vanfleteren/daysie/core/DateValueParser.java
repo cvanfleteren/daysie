@@ -150,7 +150,19 @@ public class DateValueParser {
                 }
         );
 
-        Parser<DateValue> relativePoint = Parsers.or(dayOfWeekAgoParser, dayOfWeekFromNowParser, agoParser, fromNowParser);
+        Parser<DateValue> inParser = Parsers.sequence(
+                toScanner(keywords.in()),
+                Scanners.WHITESPACES.atLeast(1),
+                numberParser.optional(1),
+                Scanners.WHITESPACES.many(),
+                chronoUnitParser,
+                (op, s1, amount, s2, unitInfo) -> {
+                    LocalDateTime now = LocalDateTime.now(clock);
+                    return calculateFromNowDate(now, unitInfo.unit(), amount);
+                }
+        );
+
+        Parser<DateValue> relativePoint = Parsers.or(dayOfWeekAgoParser, dayOfWeekFromNowParser, agoParser, fromNowParser, inParser);
 
         Parser<DateValue> relativePointWithTime = Parsers.sequence(
                 relativePoint,
@@ -250,12 +262,61 @@ public class DateValueParser {
                 ),
                 (op, spaces, dateValue) -> {
                     if (dateValue instanceof DateValue.AbsoluteRange ar) {
-                        return new DateValue.AbsoluteDate(ar.until(), true, ar.untilInclusive());
+                        return new DateValue.AbsoluteDate(ar.until(), true, false);
                     } else if (dateValue instanceof DateValue.AbsoluteDate ad) {
                         return ad;
                     } else {
                         throw new IllegalStateException("Unexpected DateValue type: " + dateValue.getClass());
                     }
+                }
+        );
+
+        Parser<DateValue> firstDayOfParser = Parsers.sequence(
+                toScanner(keywords.firstDayOf()),
+                Scanners.WHITESPACES.atLeast(1),
+                Parsers.or(
+                        generalizedLastParser,
+                        generalizedNextParser,
+                        generalizedThisParser,
+                        relativeDateParser,
+                        absoluteDateTimeParser
+                ),
+                (op, spaces, dateValue) -> {
+                    if (dateValue instanceof DateValue.AbsoluteRange ar) {
+                        return new DateValue.AbsoluteRange(ar.from().with(LocalTime.MIN), ar.from().plusDays(1).with(LocalTime.MIN), true, false);
+                    } else if (dateValue instanceof DateValue.AbsoluteDate ad) {
+                        LocalDateTime dayStart = ad.date().with(LocalTime.MIN);
+                        return new DateValue.AbsoluteRange(dayStart, dayStart.plusDays(1), true, false);
+                    } else {
+                        throw new IllegalStateException("Unexpected DateValue type: " + dateValue.getClass());
+                    }
+                }
+        );
+
+        Parser<DateValue> lastDayOfParser = Parsers.sequence(
+                toScanner(keywords.lastDayOf()),
+                Scanners.WHITESPACES.atLeast(1),
+                Parsers.or(
+                        generalizedLastParser,
+                        generalizedNextParser,
+                        generalizedThisParser,
+                        relativeDateParser,
+                        absoluteDateTimeParser
+                ),
+                (op, spaces, dateValue) -> {
+                    LocalDateTime until;
+                    boolean inclusive;
+                    if (dateValue instanceof DateValue.AbsoluteRange ar) {
+                        until = ar.until();
+                        inclusive = ar.untilInclusive();
+                    } else if (dateValue instanceof DateValue.AbsoluteDate ad) {
+                        until = ad.date().plusDays(1).with(LocalTime.MIN);
+                        inclusive = false;
+                    } else {
+                        throw new IllegalStateException("Unexpected DateValue type: " + dateValue.getClass());
+                    }
+                    LocalDateTime dayStart = until.minusDays(1).with(LocalTime.MIN);
+                    return new DateValue.AbsoluteRange(dayStart, until, true, inclusive);
                 }
         );
 
@@ -297,6 +358,8 @@ public class DateValueParser {
         finalAbsoluteDateTimeParserRef.set(Parsers.longest(
                 startOfParser,
                 endOfParser,
+                firstDayOfParser,
+                lastDayOfParser,
                 betweenParser,
                 relativePointWithTime,
                 relativePoint,
@@ -384,7 +447,12 @@ public class DateValueParser {
                                     inclusive = containsIgnoreCase(keywords.fromInclusive(), op);
                                 }
                             } else if (dateValue instanceof DateValue.AbsoluteRange ar) {
-                                date = ar.from();
+                                if (inclusive) {
+                                    date = ar.from();
+                                } else {
+                                    date = ar.until();
+                                    inclusive = true;
+                                }
                             } else {
                                 throw new IllegalStateException("Unexpected DateValue type: " + dateValue.getClass());
                             }
@@ -398,7 +466,7 @@ public class DateValueParser {
                 untilAbsoluteDate,
                 fromAbsoluteDate,
                 finalAbsoluteDateTimeParser
-        ).followedBy(Scanners.WHITESPACES.many()).followedBy(Parsers.EOF);
+        ).followedBy(Scanners.WHITESPACES.many());
     }
 
     private DateValue calculateLastRange(LocalDateTime now, ChronoUnit unit, int amount, boolean isQuarter) {
@@ -761,6 +829,10 @@ public class DateValueParser {
     }
 
     public Parser<DateValue> parser() {
+        return dateValueParser.followedBy(Parsers.EOF);
+    }
+
+    public Parser<DateValue> componentParser() {
         return dateValueParser;
     }
 

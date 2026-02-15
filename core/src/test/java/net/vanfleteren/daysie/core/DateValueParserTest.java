@@ -1,6 +1,10 @@
 package net.vanfleteren.daysie.core;
 
+import org.jparsec.Parser;
+import org.jparsec.Parsers;
+import org.jparsec.Scanners;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -68,14 +72,20 @@ class DateValueParserTest {
                 "'until 2026-02',            '(-∞,2026-03-01T00:00)'",
                 "'after 2026-02',            '[2026-03-01T00:00, ∞)'",
                 "'start of last month',      '[2026-01-01T00:00,2026-01-01T00:00]'",
-                "'end of last month',        '(2026-02-01T00:00,2026-02-01T00:00)'",
+                 "'end of last month',        '[2026-02-01T00:00,2026-02-01T00:00]'",
                 "'since end of last month',  '[2026-02-01T00:00, ∞)'",
                 "'since this month',         '[2026-02-01T00:00, ∞)'",
                 "'since start of last year', '[2025-01-01T00:00, ∞)'",
                 "'since start of last month','[2026-01-01T00:00, ∞)'",
                 "'until end of this month',  '(-∞,2026-03-01T00:00)'",
                 "'begin van vorige week',    '[2026-02-02T00:00,2026-02-02T00:00]'",
-                "'einde van dit jaar',       '(2027-01-01T00:00,2027-01-01T00:00)'",
+                "'first day of this month',  '[2026-02-01T00:00,2026-02-02T00:00)'",
+                "'last day of last month',   '[2026-01-31T00:00,2026-02-01T00:00)'",
+                "'after last day of last month',   '[2026-02-01T00:00, ∞)'",
+                "'before last day of last month',   '(-∞,2026-01-31T00:00)'",
+                "'eerste dag van dit jaar',  '[2026-01-01T00:00,2026-01-02T00:00)'",
+                "'laatste dag van vorige week', '[2026-02-08T00:00,2026-02-09T00:00)'",
+                "'einde van dit jaar',       '[2027-01-01T00:00,2027-01-01T00:00]'",
 
                 "'between 2026-01-01 and 2026-02-01',           '[2026-01-01T00:00,2026-02-02T00:00)'",
                 "'tussen gisteren en vandaag',                  '[2026-02-13T00:00,2026-02-15T00:00)'",
@@ -214,6 +224,8 @@ class DateValueParserTest {
                 "tot 2 uur geleden,      '(-∞,2026-02-14T08:00)'",
                 "2 uur terug,            '[2026-02-14T08:00,2026-02-14T08:00]'",
                 "after 2 hours from now, '(2026-02-14T12:00, ∞)'",
+                "in 2 hours,             '[2026-02-14T12:00,2026-02-14T12:00]'",
+                "over 3 dagen,           '[2026-02-17T10:00,2026-02-17T10:00]'",
                 "yesterday 10:00,         '[2026-02-13T10:00,2026-02-13T10:00]'",
                 "gisteren 14:30,         '[2026-02-13T14:30,2026-02-13T14:30]'",
                 "monday 08:00,           '[2026-02-09T08:00,2026-02-09T08:00]'",
@@ -287,6 +299,24 @@ class DateValueParserTest {
             DateValue result1 = parser.parser().parse(input1);
             DateValue result2 = parser.parser().parse(input2);
             assertThat(result1.toString()).isEqualTo(result2.toString());
+        }
+    }
+
+    @Nested
+    class ComponentParserTests {
+        @Test
+        void componentParser_whenPartOfLargerParser_succeeds() {
+            LanguageKeywords combined = LanguageKeywords.combine(List.of(LanguageKeywords.ENGLISH, LanguageKeywords.DUTCH));
+            DateValueParser dateParser = new DateValueParser(combined, FIXED_CLOCK);
+            Parser<DateValue> dateComponent = dateParser.componentParser();
+
+            Parser<DateValue> composite = Parsers.sequence(
+                    Scanners.stringCaseInsensitive("a=text and b < "),
+                    dateComponent
+            );
+
+            DateValue result = composite.parse("a=text and b < 2020-02-01");
+            assertThat(result.toString()).isEqualTo("[2020-02-01T00:00,2020-02-02T00:00)");
         }
     }
 }
