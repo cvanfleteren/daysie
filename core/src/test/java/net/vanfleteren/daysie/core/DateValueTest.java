@@ -22,10 +22,16 @@ class DateValueTest {
                 "true, true, '[2026-02-13T22:34,2026-02-14T22:34]'",
                 "false, false, '(2026-02-13T22:34,2026-02-14T22:34)'",
                 "true, false, '[2026-02-13T22:34,2026-02-14T22:34)'",
-                "false, true, '(2026-02-13T22:34,2026-02-14T22:34]'"
+                "false, true, '(2026-02-13T22:34,2026-02-14T22:34]'",
+                "true, false, '[2026-02-13T22:34, ∞)'",
+                "false, false, '(2026-02-13T22:34, ∞)'",
+                "false, true, '(-∞,2026-02-13T22:34]'",
+                "false, false, '(-∞,2026-02-13T22:34)'"
         })
         void toString_variousInclusivity_returnsCorrectNotation(boolean fromInclusive, boolean untilInclusive, String expected) {
-            AbsoluteRange range = new AbsoluteRange(DATE_1, DATE_2, fromInclusive, untilInclusive);
+            LocalDateTime from = expected.contains("-∞") ? LocalDateTime.MIN : DATE_1;
+            LocalDateTime until = expected.contains("∞") && !expected.contains("-∞") ? LocalDateTime.MAX : (expected.contains("-∞") ? DATE_1 : DATE_2);
+            AbsoluteRange range = new AbsoluteRange(from, until, fromInclusive, untilInclusive);
             assertThat(range.toString()).isEqualTo(expected);
         }
     }
@@ -39,29 +45,4 @@ class DateValueTest {
         }
     }
 
-    @Nested
-    class FromAbsoluteDateTest {
-        @ParameterizedTest(name = "toString with inclusive={0} returns {1}")
-        @CsvSource({
-                "true,  '[2026-02-13T22:34, ∞)'",
-                "false, '(2026-02-13T22:34, ∞)'"
-        })
-        void toString_variousInclusivity_returnsCorrectNotation(boolean inclusive, String expected) {
-            FromAbsoluteDate date = new FromAbsoluteDate(DATE_1, inclusive);
-            assertThat(date.toString()).isEqualTo(expected);
-        }
-    }
-
-    @Nested
-    class UntilAbsoluteDateTest {
-        @ParameterizedTest(name = "toString with inclusive={0} returns {1}")
-        @CsvSource({
-                "true,  '(-∞,2026-02-13T22:34]'",
-                "false, '(-∞,2026-02-13T22:34)'"
-        })
-        void toString_variousInclusivity_returnsCorrectNotation(boolean inclusive, String expected) {
-            UntilAbsoluteDate date = new UntilAbsoluteDate(DATE_1, inclusive);
-            assertThat(date.toString()).isEqualTo(expected);
-        }
-    }
 }

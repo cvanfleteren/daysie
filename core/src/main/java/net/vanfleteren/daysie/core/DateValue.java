@@ -12,7 +12,10 @@ public sealed interface DateValue {
             String startBracket = fromInclusive ? "[" : "(";
             String endBracket = untilInclusive ? "]" : ")";
 
-            return String.format("%s%s,%s%s", startBracket, from, until, endBracket);
+            String fromStr = from.equals(LocalDateTime.MIN) ? "-∞" : from.toString();
+            String untilStr = until.equals(LocalDateTime.MAX) ? " ∞" : until.toString();
+
+            return String.format("%s%s,%s%s", startBracket, fromStr, untilStr, endBracket);
         }
     }
 
@@ -20,22 +23,6 @@ public sealed interface DateValue {
         @Override
         public @NonNull String toString() {
             return String.format("[%s,%s]", date, date);
-        }
-    }
-
-    record FromAbsoluteDate(LocalDateTime date, boolean inclusive) implements DateValue {
-        @Override
-        public @NonNull String toString() {
-            String startBracket = inclusive ? "[" : "(";
-            return String.format("%s%s, ∞)", startBracket, date);
-        }
-    }
-
-    record UntilAbsoluteDate(LocalDateTime date, boolean inclusive) implements DateValue {
-        @Override
-        public @NonNull String toString() {
-            String endBracket = inclusive ? "]" : ")";
-            return String.format("(-∞,%s%s", date, endBracket);
         }
     }
 
