@@ -7,10 +7,10 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.LocalDateTime;
 
-import static net.vanfleteren.daysie.core.DateValue.*;
+import static net.vanfleteren.daysie.core.DateValueInt.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class DateValueTest {
+class DateValueIntTest {
 
     private static final LocalDateTime DATE_1 = LocalDateTime.of(2026, 2, 13, 22, 34);
     private static final LocalDateTime DATE_2 = LocalDateTime.of(2026, 2, 14, 22, 34);
@@ -40,7 +40,7 @@ class DateValueTest {
     class AbsoluteDateTest {
         @Test
         void toString_singleDate_returnsPointRange() {
-            AbsoluteDate date = new AbsoluteDate(DATE_1, false, true);
+            AbsoluteDateInt date = new AbsoluteDateInt(DATE_1, false, true);
             assertThat(date.toString()).isEqualTo("[2026-02-13T22:34,2026-02-13T22:34]");
         }
     }

@@ -15,7 +15,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class DateValueParserTest {
+class DateValueIntParserTest {
 
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-02-14T10:00:00Z"), ZoneId.of("UTC"));
 
@@ -36,7 +36,7 @@ class DateValueParserTest {
     }
 
     @Nested
-    class DateValueParserTests {
+    class DateValueIntParserTests {
         @ParameterizedTest(name = "parse \"{0}\" returns {1}")
         @CsvSource({
                 "'2026-02-03',              '[2026-02-03T00:00,2026-02-04T00:00)'",

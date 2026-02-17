@@ -61,6 +61,7 @@ DateValue result = parser.parser().parse("vorige week");
 * Durations: last 3 days, next 2 weeks, this month
 * Points in time: start of last month, end of this year, 5 minutes ago
 * Operators: after 2026-01-01, since monday 08:00, between 5 minutes ago and now
+* And many more, check the tests for more examples!
 
 ## License
 

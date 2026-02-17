@@ -4,9 +4,14 @@ import org.jspecify.annotations.NonNull;
 
 import java.time.LocalDateTime;
 
-public sealed interface DateValue {
+/**
+ * Internal representation of Range/Date
+ */
+sealed interface DateValueInt {
 
-    record AbsoluteRange(LocalDateTime from, LocalDateTime until, boolean fromInclusive, boolean untilInclusive) implements DateValue {
+    DateValue toPublic();
+
+    record AbsoluteRange(LocalDateTime from, LocalDateTime until, boolean fromInclusive, boolean untilInclusive) implements DateValueInt {
         @Override
         public @NonNull String toString() {
             String startBracket = fromInclusive ? "[" : "(";
@@ -18,19 +23,19 @@ public sealed interface DateValue {
             return String.format("%s%s,%s%s", startBracket, fromStr, untilStr, endBracket);
         }
 
-        static AbsoluteRange from(DateValueInt.AbsoluteRange internal) {
-            return new AbsoluteRange(internal.from(), internal.until(), internal.fromInclusive(), internal.untilInclusive());
+        public DateValue.AbsoluteRange toPublic() {
+            return DateValue.AbsoluteRange.from(this);
         }
     }
 
-    record AbsoluteDate(LocalDateTime date) implements DateValue {
+    record AbsoluteDateInt(LocalDateTime date, boolean isRangeBoundary, boolean isInclusive) implements DateValueInt {
         @Override
         public @NonNull String toString() {
             return String.format("[%s,%s]", date, date);
         }
 
-        static AbsoluteDate from(DateValueInt.AbsoluteDateInt internal) {
-            return new AbsoluteDate(internal.date());
+        public DateValue.AbsoluteDate toPublic() {
+            return DateValue.AbsoluteDate.from(this);
         }
     }
 
