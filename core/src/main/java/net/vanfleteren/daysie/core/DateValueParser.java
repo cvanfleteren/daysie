@@ -231,12 +231,12 @@ public class DateValueParser {
                 toScanner(keywords.at()).optional(),
                 Scanners.WHITESPACES.many(),
                 timeParser,
-                (pointVal, s1, at, s2, time) -> {
-                    if (pointVal instanceof DateValue.AbsoluteDate ad) {
+                (pointVal, s1, at, s2, time) -> switch (pointVal) {
+                    case DateValue.AbsoluteDate ad -> {
                         LocalDateTime dt = LocalDateTime.of(ad.date().toLocalDate(), time);
-                        return new DateValue.AbsoluteDate(dt, false, true);
+                        yield new DateValue.AbsoluteDate(dt, false, true);
                     }
-                    throw new IllegalStateException("Unexpected DateValue type: " + pointVal.getClass());
+                    default -> throw new IllegalStateException("Unexpected DateValue type: " + pointVal.getClass());
                 }
         );
     }
@@ -253,31 +253,28 @@ public class DateValueParser {
                 Scanners.WHITESPACES.many(),
                 finalAbsoluteDateTimeParser,
                 (fromValue, s1, op, s2, untilValue) -> {
-                    LocalDateTime from;
+                    LocalDateTime from = switch (fromValue) {
+                        case DateValue.AbsoluteDate ad -> ad.date();
+                        case DateValue.AbsoluteRange ar -> ar.from();
+                    };
+
                     LocalDateTime until;
                     boolean isUntilInclusive;
 
-                    if (fromValue instanceof DateValue.AbsoluteDate ad) {
-                        from = ad.date();
-                    } else if (fromValue instanceof DateValue.AbsoluteRange ar) {
-                        from = ar.from();
-                    } else {
-                        throw new IllegalStateException("Unexpected DateValue type: " + fromValue.getClass());
-                    }
-
-                    if (untilValue instanceof DateValue.AbsoluteDate ad) {
-                        until = ad.date();
-                        isUntilInclusive = containsIgnoreCase(keywords.rangeConnectorsInclusive(), op);
-                    } else if (untilValue instanceof DateValue.AbsoluteRange ar) {
-                        if (containsIgnoreCase(keywords.rangeConnectorsInclusive(), op)) {
-                            until = ar.until();
-                            isUntilInclusive = ar.untilInclusive();
-                        } else {
-                            until = ar.from();
-                            isUntilInclusive = false;
+                    switch (untilValue) {
+                        case DateValue.AbsoluteDate ad -> {
+                            until = ad.date();
+                            isUntilInclusive = containsIgnoreCase(keywords.rangeConnectorsInclusive(), op);
                         }
-                    } else {
-                        throw new IllegalStateException("Unexpected DateValue type: " + untilValue.getClass());
+                        case DateValue.AbsoluteRange ar -> {
+                            if (containsIgnoreCase(keywords.rangeConnectorsInclusive(), op)) {
+                                until = ar.until();
+                                isUntilInclusive = ar.untilInclusive();
+                            } else {
+                                until = ar.from();
+                                isUntilInclusive = false;
+                            }
+                        }
                     }
 
                     return new DateValue.AbsoluteRange(from, until, true, isUntilInclusive);
@@ -290,14 +287,9 @@ public class DateValueParser {
                 toScanner(keywords.startOf()),
                 Scanners.WHITESPACES.atLeast(1),
                 base,
-                (op, spaces, dateValue) -> {
-                    if (dateValue instanceof DateValue.AbsoluteRange ar) {
-                        return new DateValue.AbsoluteDate(ar.from(), true, ar.fromInclusive());
-                    } else if (dateValue instanceof DateValue.AbsoluteDate ad) {
-                        return ad;
-                    } else {
-                        throw new IllegalStateException("Unexpected DateValue type: " + dateValue.getClass());
-                    }
+                (op, spaces, dateValue) -> switch (dateValue) {
+                    case DateValue.AbsoluteRange ar -> new DateValue.AbsoluteDate(ar.from(), true, ar.fromInclusive());
+                    case DateValue.AbsoluteDate ad -> ad;
                 }
         );
     }
@@ -307,14 +299,10 @@ public class DateValueParser {
                 toScanner(keywords.endOf()),
                 Scanners.WHITESPACES.atLeast(1),
                 base,
-                (op, spaces, dateValue) -> {
-                    if (dateValue instanceof DateValue.AbsoluteRange ar) {
-                        return new DateValue.AbsoluteDate(ar.until(), true, false);
-                    } else if (dateValue instanceof DateValue.AbsoluteDate ad) {
-                        return ad;
-                    } else {
-                        throw new IllegalStateException("Unexpected DateValue type: " + dateValue.getClass());
-                    }
+                (op, spaces, dateValue) -> switch (dateValue) {
+                    case DateValue.AbsoluteRange ar -> new DateValue.AbsoluteDate(ar.until(), true, false);
+                    case DateValue.AbsoluteDate ad -> ad;
+                    default -> throw new IllegalStateException("Unexpected DateValue type: " + dateValue.getClass());
                 }
         );
     }
@@ -324,14 +312,11 @@ public class DateValueParser {
                 toScanner(keywords.firstDayOf()),
                 Scanners.WHITESPACES.atLeast(1),
                 base,
-                (op, spaces, dateValue) -> {
-                    if (dateValue instanceof DateValue.AbsoluteRange ar) {
-                        return new DateValue.AbsoluteRange(ar.from().with(LocalTime.MIN), ar.from().plusDays(1).with(LocalTime.MIN), true, false);
-                    } else if (dateValue instanceof DateValue.AbsoluteDate ad) {
+                (op, spaces, dateValue) -> switch (dateValue) {
+                    case DateValue.AbsoluteRange ar -> new DateValue.AbsoluteRange(ar.from().with(LocalTime.MIN), ar.from().plusDays(1).with(LocalTime.MIN), true, false);
+                    case DateValue.AbsoluteDate ad -> {
                         LocalDateTime dayStart = ad.date().with(LocalTime.MIN);
-                        return new DateValue.AbsoluteRange(dayStart, dayStart.plusDays(1), true, false);
-                    } else {
-                        throw new IllegalStateException("Unexpected DateValue type: " + dateValue.getClass());
+                        yield new DateValue.AbsoluteRange(dayStart, dayStart.plusDays(1), true, false);
                     }
                 }
         );
@@ -345,14 +330,16 @@ public class DateValueParser {
                 (op, spaces, dateValue) -> {
                     LocalDateTime until;
                     boolean inclusive;
-                    if (dateValue instanceof DateValue.AbsoluteRange ar) {
-                        until = ar.until();
-                        inclusive = ar.untilInclusive();
-                    } else if (dateValue instanceof DateValue.AbsoluteDate ad) {
-                        until = ad.date().plusDays(1).with(LocalTime.MIN);
-                        inclusive = false;
-                    } else {
-                        throw new IllegalStateException("Unexpected DateValue type: " + dateValue.getClass());
+                    switch (dateValue) {
+                        case DateValue.AbsoluteRange ar -> {
+                            until = ar.until();
+                            inclusive = ar.untilInclusive();
+                        }
+                        case DateValue.AbsoluteDate ad -> {
+                            until = ad.date().plusDays(1).with(LocalTime.MIN);
+                            inclusive = false;
+                        }
+                        default -> throw new IllegalStateException("Unexpected DateValue type: " + dateValue.getClass());
                     }
                     LocalDateTime dayStart = until.minusDays(1).with(LocalTime.MIN);
                     return new DateValue.AbsoluteRange(dayStart, until, true, inclusive);
@@ -370,26 +357,23 @@ public class DateValueParser {
                 Scanners.WHITESPACES.atLeast(1),
                 finalAbsoluteDateTimeParser,
                 (op1, s1, fromValue, s2, op2, s3, untilValue) -> {
-                    LocalDateTime from;
+                    LocalDateTime from = switch (fromValue) {
+                        case DateValue.AbsoluteDate ad -> ad.date();
+                        case DateValue.AbsoluteRange ar -> ar.from();
+                    };
+
                     LocalDateTime until;
                     boolean isUntilInclusive;
 
-                    if (fromValue instanceof DateValue.AbsoluteDate ad) {
-                        from = ad.date();
-                    } else if (fromValue instanceof DateValue.AbsoluteRange ar) {
-                        from = ar.from();
-                    } else {
-                        throw new IllegalStateException("Unexpected DateValue type: " + fromValue.getClass());
-                    }
-
-                    if (untilValue instanceof DateValue.AbsoluteDate ad) {
-                        until = ad.date();
-                        isUntilInclusive = true; // "between A and B" is usually inclusive of the day B
-                    } else if (untilValue instanceof DateValue.AbsoluteRange ar) {
-                        until = ar.until();
-                        isUntilInclusive = ar.untilInclusive();
-                    } else {
-                        throw new IllegalStateException("Unexpected DateValue type: " + untilValue.getClass());
+                    switch (untilValue) {
+                        case DateValue.AbsoluteDate ad -> {
+                            until = ad.date();
+                            isUntilInclusive = true; // "between A and B" is usually inclusive of the day B
+                        }
+                        case DateValue.AbsoluteRange ar -> {
+                            until = ar.until();
+                            isUntilInclusive = ar.untilInclusive();
+                        }
                     }
 
                     return new DateValue.AbsoluteRange(from, until, true, isUntilInclusive);
@@ -406,27 +390,28 @@ public class DateValueParser {
                 (op, spaces, dateValue) -> {
                     LocalDateTime date;
                     boolean inclusive;
-                    if (dateValue instanceof DateValue.AbsoluteDate ad) {
-                        date = ad.date();
-                        if (ad.isRangeBoundary()) {
-                            if (containsIgnoreCase(keywords.untilExclusive(), op)) {
-                                inclusive = false;
+                    switch (dateValue) {
+                        case DateValue.AbsoluteDate ad -> {
+                            date = ad.date();
+                            if (ad.isRangeBoundary()) {
+                                if (containsIgnoreCase(keywords.untilExclusive(), op)) {
+                                    inclusive = false;
+                                } else {
+                                    inclusive = ad.isInclusive();
+                                }
                             } else {
-                                inclusive = ad.isInclusive();
+                                inclusive = containsIgnoreCase(keywords.untilInclusive(), op);
                             }
-                        } else {
-                            inclusive = containsIgnoreCase(keywords.untilInclusive(), op);
                         }
-                    } else if (dateValue instanceof DateValue.AbsoluteRange ar) {
-                        if (containsIgnoreCase(keywords.untilInclusive(), op)) {
-                            date = ar.until();
-                            inclusive = ar.untilInclusive();
-                        } else {
-                            date = ar.from();
-                            inclusive = false;
+                        case DateValue.AbsoluteRange ar -> {
+                            if (containsIgnoreCase(keywords.untilInclusive(), op)) {
+                                date = ar.until();
+                                inclusive = ar.untilInclusive();
+                            } else {
+                                date = ar.from();
+                                inclusive = false;
+                            }
                         }
-                    } else {
-                        throw new IllegalStateException("Unexpected DateValue type: " + dateValue.getClass());
                     }
                     return new DateValue.AbsoluteRange(LocalDateTime.MIN, date, false, inclusive);
                 }
@@ -440,12 +425,10 @@ public class DateValueParser {
                 Scanners.WHITESPACES.many(),
                 dateOnlyParser,
                 (op, spaces, dateValue) -> {
-                    LocalDateTime date;
-                    if (dateValue instanceof DateValue.AbsoluteRange ar) {
-                        date = ar.until();
-                    } else {
-                        throw new IllegalStateException("Unexpected DateValue type for dateOnlyParser: " + dateValue.getClass());
-                    }
+                    LocalDateTime date = switch (dateValue) {
+                        case DateValue.AbsoluteRange ar -> ar.until();
+                        default -> throw new IllegalStateException("Unexpected DateValue type for dateOnlyParser: " + dateValue.getClass());
+                    };
                     return new DateValue.AbsoluteRange(date, LocalDateTime.MAX, true, false);
                 }
         );
@@ -457,28 +440,29 @@ public class DateValueParser {
                 (op, spaces, dateValue) -> {
                     LocalDateTime date;
                     boolean inclusive = containsIgnoreCase(keywords.fromInclusive(), op);
-                    if (dateValue instanceof DateValue.AbsoluteDate ad) {
-                        date = ad.date();
-                        if (ad.isRangeBoundary()) {
-                            if (containsIgnoreCase(keywords.fromExclusive(), op)) {
-                                inclusive = false;
-                            } else if (containsIgnoreCase(keywords.fromInclusive(), op)) {
-                                inclusive = true;
+                    switch (dateValue) {
+                        case DateValue.AbsoluteDate ad -> {
+                            date = ad.date();
+                            if (ad.isRangeBoundary()) {
+                                if (containsIgnoreCase(keywords.fromExclusive(), op)) {
+                                    inclusive = false;
+                                } else if (containsIgnoreCase(keywords.fromInclusive(), op)) {
+                                    inclusive = true;
+                                } else {
+                                    inclusive = ad.isInclusive();
+                                }
                             } else {
-                                inclusive = ad.isInclusive();
+                                inclusive = containsIgnoreCase(keywords.fromInclusive(), op);
                             }
-                        } else {
-                            inclusive = containsIgnoreCase(keywords.fromInclusive(), op);
                         }
-                    } else if (dateValue instanceof DateValue.AbsoluteRange ar) {
-                        if (inclusive) {
-                            date = ar.from();
-                        } else {
-                            date = ar.until();
-                            inclusive = true;
+                        case DateValue.AbsoluteRange ar -> {
+                            if (inclusive) {
+                                date = ar.from();
+                            } else {
+                                date = ar.until();
+                                inclusive = true;
+                            }
                         }
-                    } else {
-                        throw new IllegalStateException("Unexpected DateValue type: " + dateValue.getClass());
                     }
                     return new DateValue.AbsoluteRange(date, LocalDateTime.MAX, inclusive, false);
                 }
@@ -507,14 +491,10 @@ public class DateValueParser {
                 Scanners.WHITESPACES.many(),
                 timeParser,
                 (dateVal, s1, at, s2, time) -> {
-                    LocalDateTime dt;
-                    if (dateVal instanceof DateValue.AbsoluteRange ar) {
-                        dt = LocalDateTime.of(ar.from().toLocalDate(), time);
-                    } else if (dateVal instanceof DateValue.AbsoluteDate ad) {
-                        dt = LocalDateTime.of(ad.date().toLocalDate(), time);
-                    } else {
-                        throw new IllegalStateException("Unexpected DateValue type: " + dateVal.getClass());
-                    }
+                    LocalDateTime dt = switch (dateVal) {
+                        case DateValue.AbsoluteRange ar -> LocalDateTime.of(ar.from().toLocalDate(), time);
+                        case DateValue.AbsoluteDate ad -> LocalDateTime.of(ad.date().toLocalDate(), time);
+                    };
                     return new DateValue.AbsoluteDate(dt, false, true);
                 }
         );
