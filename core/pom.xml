@@ -11,7 +11,9 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
+    <name>Daysie core</name>
     <artifactId>core</artifactId>
+    <description>Daysie core module containing the DateValue parsers.</description>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
