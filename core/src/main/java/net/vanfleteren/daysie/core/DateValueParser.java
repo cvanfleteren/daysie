@@ -9,6 +9,7 @@ import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -667,14 +668,34 @@ public class DateValueParser {
                 return new DateValueInt.AbsoluteRange(start.atStartOfDay(), start.plusMonths(1).atStartOfDay(), true, false);
             });
 
-    public Parser<DateValue> absoluteDateTimeParser() {
+    Parser<DateValue> absoluteDateTimeParser() {
         return absoluteDateTimeParser.map(DateValueInt::toPublic);
     }
 
+    /**
+     * Returns a parsed DateValue from the given term, or Optional.empty if parsing fails.
+     * @return an optional parsed DateValue
+     */
+    public Optional<DateValue> parse(String term) {
+        try {
+            return Optional.of(parser().parse(term));
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Return a jparsec parser for DateValue, intended for standalone use
+     * @return a jparsec parser
+     */
     public Parser<DateValue> parser() {
         return dateValueParser.followedBy(Parsers.EOF).map(DateValueInt::toPublic);
     }
 
+    /**
+     * Return a jparsec parser for DateValue, that you can combine with other parsers.
+     * @return a jparsec parser
+     */
     public Parser<DateValue> componentParser() {
         return dateValueParser.map(DateValueInt::toPublic);
     }
