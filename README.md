@@ -1,5 +1,7 @@
 # Daysie
 
+[![Maven Central](https://img.shields.io/maven-central/v/net.vanfleteren.daysie/daysie-parent.svg?label=Maven%20Central)](https://central.sonatype.com/search?q=net.vanfleteren.daysie)
+
 Daysie is a natural language date and time parser for Java. It allows you to parse human-readable date expressions into structured date and time objects. It is built on top of the JParsec library and supports multiple languages.
 
 ## Features
@@ -19,7 +21,7 @@ Daysie is a Maven-based project. You can include it in your project by building 
 <dependency>
     <groupId>net.vanfleteren.daysie</groupId>
     <artifactId>daysie-core</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version><!-- latest-version --></version>
 </dependency>
 ```
 
